@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 
 # Version: Standardwert, beim Release-Build aus dem Git-Tag über die
 # Umgebungsvariable PANDOCUI_RELEASE_VERSION gesetzt (z. B. Tag v0.2.0 → 0.2.0).
-set(PANDOCUI_PROJECT_VERSION 0.1.0)
+set(PANDOCUI_PROJECT_VERSION 0.1.1)
 if(NOT "$ENV{PANDOCUI_RELEASE_VERSION}" STREQUAL "")
     set(PANDOCUI_PROJECT_VERSION "$ENV{PANDOCUI_RELEASE_VERSION}")
 endif()
