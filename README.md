@@ -171,8 +171,17 @@ und bei Pull Requests für
 | Plattform | Umgebung | Ergebnis |
 |-----------|----------|----------|
 | Windows | `windows-latest`, MSVC, Qt 6.8 LTS | `PandocUi-<version>-windows-x64.zip` (mit Qt-DLLs, ohne pandoc) |
+| macOS | `macos-26`, Universal-Binary (Apple Silicon + Intel), Qt 6.8 LTS, ab macOS 12 | `PandocUi-<version>-macos-universal.dmg` (App-Bundle, ohne pandoc) |
 | Debian 13 | Container `debian:13` | `pandocui_<version>_debian13_amd64.deb` |
 | Rocky Linux 10 | Container `rockylinux/rockylinux:10` | `pandocui-<version>-1.el10.x86_64.rpm` |
+
+Die macOS-App ist nur ad hoc signiert und nicht von Apple notarisiert. Beim ersten Start
+meldet macOS daher, dass der Entwickler nicht verifiziert werden kann: die App per
+Rechtsklick → *Öffnen* starten oder die Quarantäne-Markierung entfernen:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/PandocUi.app
+```
 
 Die Dateien stehen danach als Artefakte am Workflow-Lauf. Ein **Release** entsteht durch
 einen Versions-Tag; die Version wird aus dem Tag übernommen:

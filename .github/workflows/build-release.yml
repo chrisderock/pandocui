@@ -1,4 +1,4 @@
-# Baut und testet PandocUi für Windows, Debian und Rocky Linux.
+# Baut und testet PandocUi für Windows, macOS, Debian und Rocky Linux.
 # Bei einem Versions-Tag (z. B. v0.2.0) werden die Pakete als GitHub-Release veröffentlicht:
 #
 #   git tag v0.2.0
@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 env:
-  # Qt-LTS-Reihe für Windows (Debian 13 bringt Qt 6.8, Rocky Linux 10 Qt 6.10 selbst mit)
+  # Qt-LTS-Reihe für Windows und macOS (Debian 13 bringt Qt 6.8, Rocky Linux 10 Qt 6.10 selbst mit)
   QT_VERSION: '6.8.*'
 
 jobs:
@@ -145,10 +145,59 @@ jobs:
           path: dist/*.zip
           if-no-files-found: error
 
+  macos:
+    name: macOS
+    needs: version
+    runs-on: macos-26
+    env:
+      PANDOCUI_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+      # Universal-Binary für Apple Silicon und Intel; Qt 6.8 unterstützt ab macOS 12
+      CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+      MACOSX_DEPLOYMENT_TARGET: '12.0'
+    steps:
+      - uses: actions/checkout@v5
+      - name: Qt installieren
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: mac
+          target: desktop
+          arch: clang_64
+          cache: true
+      - name: Ninja und pandoc (für den Ende-zu-Ende-Test) installieren
+        run: brew install ninja pandoc
+      - name: Bauen und testen
+        run: |
+          sw_vers
+          export CMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          bash build.sh --build-dir build/macos
+      - name: App-Bundle bereitstellen und DMG erstellen
+        run: |
+          app=build/macos/PandocUi.app
+          "$QT_ROOT_DIR/bin/macdeployqt" "$app"
+          # macdeployqt verändert die Binärdateien: neu (ad hoc) signieren,
+          # sonst startet die App auf Apple Silicon nicht
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          echo "Architekturen: $(lipo -archs "$app/Contents/MacOS/PandocUi")"
+
+          staging=build/dmg
+          rm -rf "$staging" && mkdir -p "$staging" dist
+          cp -R "$app" "$staging/"
+          ln -s /Applications "$staging/Applications"
+          hdiutil create -volname "PandocUi $PANDOCUI_RELEASE_VERSION" -srcfolder "$staging" \
+            -ov -format UDZO "dist/PandocUi-$PANDOCUI_RELEASE_VERSION-macos-universal.dmg"
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pandocui-macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
   release:
     name: GitHub-Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [version, linux, windows]
+    needs: [version, linux, windows, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write

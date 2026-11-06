@@ -14,7 +14,7 @@ CLEAN=0
 RUN_TESTS=1
 RUN_APP=0
 INSTALL_PREFIX=""
-JOBS="$(nproc 2>/dev/null || echo 4)"
+JOBS="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 
 usage() {
     cat <<EOF
@@ -89,7 +89,7 @@ fi
 step "Konfiguriere ($BUILD_TYPE) in $BUILD_DIR"
 TESTS_FLAG=ON
 [[ $RUN_TESTS -eq 0 ]] && TESTS_FLAG=OFF
-cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" "${GENERATOR[@]}" \
+cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" ${GENERATOR[@]+"${GENERATOR[@]}"} \
       -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
       -DPANDOCUI_BUILD_TESTS="$TESTS_FLAG"
 

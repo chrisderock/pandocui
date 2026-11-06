@@ -58,6 +58,12 @@ target_link_libraries(PandocUi PRIVATE pandocui_core)
 set_target_properties(PandocUi PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
+    # Angaben für Info.plist des macOS-App-Bundles
+    MACOSX_BUNDLE_BUNDLE_NAME "PandocUi"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.chrisderock.pandocui"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_INFO_STRING "PandocUi ${PROJECT_VERSION}"
 )
 
 include(GNUInstallDirs)
