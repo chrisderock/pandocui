@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=PandocUi
+GenericName=Document Converter
+GenericName[de]=Dokumentkonverter
+Comment=Convert documents with pandoc
+Comment[de]=Dokumente mit pandoc umwandeln
+Exec=PandocUi %f
+Icon=accessories-text-editor
+Terminal=false
+Categories=Office;Publishing;Qt;
+MimeType=text/markdown;text/x-markdown;text/html;text/x-tex;text/x-rst;text/org;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.oasis.opendocument.text;application/epub+zip;
+Keywords=pandoc;markdown;convert;docx;pdf;

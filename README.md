@@ -141,6 +141,50 @@ Die Tests prüfen Formaterkennung, Dateinamen, das Zusammensetzen der Argumente 
 die Oberfläche (offscreen). Ist pandoc installiert, wird `tests/data/beispiel.md`
 zusätzlich tatsächlich nach HTML, DOCX, GFM, ODT und – falls `pdflatex` vorhanden – PDF umgewandelt.
 
+## Linux-Pakete
+
+```bash
+cmake --build ~/builds/pandocui-release && cd ~/builds/pandocui-release
+cpack -G DEB    # Debian/Ubuntu
+cpack -G RPM    # Rocky Linux/RHEL/Fedora (benötigt rpm-build)
+```
+
+Die Pakete installieren `/usr/bin/PandocUi` samt Starter im Anwendungsmenü. Das `.deb`
+empfiehlt pandoc als Abhängigkeit; unter Rocky Linux/RHEL stammt pandoc aus EPEL und wird
+separat installiert:
+
+```bash
+sudo dnf install epel-release && sudo dnf install pandoc
+```
+ `ci/build-linux.sh` erledigt Installation der Build-Abhängigkeiten,
+Build, Tests und Paketierung in einem frischen Debian- oder Rocky-Linux-System, z. B.:
+
+```bash
+podman run --rm -v "$PWD:/src:ro" debian:13 bash -c 'cp -r /src /work && cd /work && bash ci/build-linux.sh'
+```
+
+## Automatischer Build und Release (GitHub Actions)
+
+Der Workflow `.github/workflows/build-release.yml` baut und testet bei jedem Push auf `main`
+und bei Pull Requests für
+
+| Plattform | Umgebung | Ergebnis |
+|-----------|----------|----------|
+| Windows | `windows-latest`, MSVC, Qt 6.8 LTS | `PandocUi-<version>-windows-x64.zip` (mit Qt-DLLs, ohne pandoc) |
+| Debian 13 | Container `debian:13` | `pandocui_<version>_debian13_amd64.deb` |
+| Rocky Linux 10 | Container `rockylinux/rockylinux:10` | `pandocui-<version>-1.el10.x86_64.rpm` |
+
+Die Dateien stehen danach als Artefakte am Workflow-Lauf. Ein **Release** entsteht durch
+einen Versions-Tag; die Version wird aus dem Tag übernommen:
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+Der Workflow baut dann alle Plattformen mit Version 0.2.0 und veröffentlicht die Pakete
+zusammen mit `SHA256SUMS.txt` als GitHub-Release mit automatisch erzeugten Release Notes.
+
 ## Aufbau
 
 | Datei | Inhalt |

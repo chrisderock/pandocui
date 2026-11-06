@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 
+# Version: Standardwert, beim Release-Build aus dem Git-Tag über die
+# Umgebungsvariable PANDOCUI_RELEASE_VERSION gesetzt (z. B. Tag v0.2.0 → 0.2.0).
+set(PANDOCUI_PROJECT_VERSION 0.1.0)
+if(NOT "$ENV{PANDOCUI_RELEASE_VERSION}" STREQUAL "")
+    set(PANDOCUI_PROJECT_VERSION "$ENV{PANDOCUI_RELEASE_VERSION}")
+endif()
+
 project(PandocUi
-    VERSION 0.1.0
+    VERSION ${PANDOCUI_PROJECT_VERSION}
     DESCRIPTION "Grafische Oberfläche für pandoc"
     LANGUAGES CXX)
 
@@ -54,6 +61,36 @@ install(TARGETS PandocUi
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+if(UNIX AND NOT APPLE)
+    install(FILES packaging/pandocui.desktop
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
+endif()
+
+# Pakete für Linux (cpack -G DEB bzw. cpack -G RPM)
+set(CPACK_PACKAGE_NAME "pandocui")
+set(CPACK_PACKAGE_VENDOR "PandocUi")
+set(CPACK_PACKAGE_CONTACT "chrisderock <chrisderock@users.noreply.github.com>")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/chrisderock/pandocui")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Graphical user interface for pandoc")
+set(CPACK_PACKAGE_DESCRIPTION
+    "PandocUi converts documents with pandoc using a step-by-step wizard: choose an \
+input file, one or more output formats with per-format options and an output folder.")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+set(CPACK_STRIP_FILES ON)
+
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_DEBIAN_PACKAGE_SECTION "text")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)           # Abhängigkeiten aus den Bibliotheken ermitteln
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "pandoc")
+
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+set(CPACK_RPM_PACKAGE_LICENSE "Unspecified")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Publishing")
+set(CPACK_RPM_PACKAGE_RELEASE_DIST ON)           # Dist-Tag, z. B. .el10
+# pandoc ist bei Rocky/RHEL nur über EPEL verfügbar und wird daher nicht als harte
+# Abhängigkeit eingetragen (weiche Abhängigkeiten unterstützt CPackRPM dort nicht).
+include(CPack)
 
 # Tests
 option(PANDOCUI_BUILD_TESTS "Tests bauen" ON)

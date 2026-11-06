@@ -1,0 +1,142 @@
+# Baut und testet PandocUi für Windows, Debian und Rocky Linux.
+# Bei einem Versions-Tag (z. B. v0.2.0) werden die Pakete als GitHub-Release veröffentlicht:
+#
+#   git tag v0.2.0
+#   git push origin v0.2.0
+#
+name: Build und Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  # Qt-LTS-Reihe für Windows (Debian 13 bringt Qt 6.8, Rocky Linux 10 Qt 6.10 selbst mit)
+  QT_VERSION: '6.8.*'
+
+jobs:
+  version:
+    name: Version bestimmen
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: version
+        name: Version aus Tag bzw. CMakeLists.txt
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Der Tag '$GITHUB_REF_NAME' hat nicht die Form vX.Y.Z"
+              exit 1
+            fi
+          else
+            version="$(sed -n 's/^set(PANDOCUI_PROJECT_VERSION \([0-9.]*\))$/\1/p' CMakeLists.txt)"
+          fi
+          echo "Version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  linux:
+    name: ${{ matrix.name }}
+    needs: version
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Debian 13
+            image: debian:13
+            artifact: debian13
+          - name: Rocky Linux 10
+            image: rockylinux/rockylinux:10
+            artifact: rocky10
+    env:
+      PANDOCUI_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bauen, testen, paketieren
+        run: bash ci/build-linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pandocui-${{ matrix.artifact }}
+          path: dist/*
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    needs: version
+    runs-on: windows-latest
+    env:
+      PANDOCUI_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Qt installieren
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2022_64
+          cache: true
+      - name: pandoc für den Ende-zu-Ende-Test installieren
+        shell: powershell
+        run: |
+          choco install pandoc --no-progress -y
+          "C:\Program Files\Pandoc" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Bauen, testen, bereitstellen
+        shell: powershell
+        run: .\build.ps1 -QtDir $env:QT_ROOT_DIR -DeployDir dist\PandocUi
+      - name: ZIP-Archiv erstellen
+        shell: powershell
+        run: |
+          $zip = "dist\PandocUi-$env:PANDOCUI_RELEASE_VERSION-windows-x64.zip"
+          Compress-Archive -Path dist\PandocUi -DestinationPath $zip
+          Get-Item $zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pandocui-windows
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: GitHub-Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Prüfsummen
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            # Erneuter Lauf: vorhandene Dateien ersetzen
+            gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "PandocUi $VERSION" \
+              --generate-notes \
+              --verify-tag
+          fi
