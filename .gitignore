@@ -1,0 +1,9 @@
+build/
+build-*/
+dist/
+out/
+CMakeLists.txt.user*
+CMakeUserPresets.json
+.vs/
+.vscode/
+*.autosave
