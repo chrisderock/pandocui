@@ -6,20 +6,20 @@
 
 #include <QHash>
 #include <QMainWindow>
+#include <QSet>
 #include <QVariantMap>
 
 class FormatOptionsWidget;
 class QAction;
 class QCheckBox;
 class QComboBox;
-class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
 class QProgressBar;
 class QPushButton;
-class QSplitter;
 class QStackedWidget;
+class StepNavigator;
 class QTabWidget;
 class QToolButton;
 class QTreeWidget;
@@ -32,6 +32,15 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+
+    // Wizard: Schritte 0 (Eingabedatei) bis 4 (Erzeugen)
+    enum Step { InputStep, FormatsStep, OptionsStep, OutputStep, RunStep, StepCount };
+    int currentStep() const;
+    // Wechselt zum Schritt, sofern alle vorherigen Schritte vollständig sind.
+    bool setCurrentStep(int step);
+    // Was in einem Schritt noch fehlt (leer = vollständig).
+    QString stepProblem(int step) const;
+    bool isStepReachable(int step) const;
 
     // Schritt 1: Eingabedatei setzen (erkennt das Format automatisch, sofern aktiviert)
     bool openInputFile(const QString &path);
@@ -103,6 +112,8 @@ private:
 
     QStringList argumentsFor(const QString &format) const;
     void updateState();
+    void updateWizard();
+    QString summaryHtml() const;
 
     void startConversion();
     void onJobStarted(int index, int total, const ConversionJob &job);
@@ -126,16 +137,30 @@ private:
     ConversionRunner *m_runner;
     PresetStore m_presets;
     QString m_currentPresetName;
+    QSet<int> m_visitedSteps;
+    QString m_lastResult;
+    bool m_lastResultOk = false;
+    bool m_updating = false;
 
-    // Oberfläche
+    // Oberfläche: Wizard-Gerüst
+    QStringList m_stepTitles;
+    QStringList m_stepDescriptions;
+    StepNavigator *m_navigator = nullptr;
+    QStackedWidget *m_pages = nullptr;
+    QLabel *m_pageTitle = nullptr;
+    QLabel *m_pageDescription = nullptr;
+    QLabel *m_footerHint = nullptr;
+    QPushButton *m_backButton = nullptr;
+    QPushButton *m_nextButton = nullptr;
+    QLabel *m_summaryLabel = nullptr;
+
+    // Oberfläche: Inhalte der Schritte
     QLabel *m_pandocBanner = nullptr;
-    QGroupBox *m_inputGroup = nullptr;
     QLineEdit *m_inputEdit = nullptr;
     QComboBox *m_inputFormatCombo = nullptr;
     QCheckBox *m_autoDetectCheck = nullptr;
     QLabel *m_detectLabel = nullptr;
 
-    QSplitter *m_formatSplitter = nullptr;
     QComboBox *m_presetCombo = nullptr;
     QToolButton *m_presetDeleteButton = nullptr;
     QLineEdit *m_formatFilter = nullptr;
@@ -144,7 +169,6 @@ private:
     QStackedWidget *m_optionsStack = nullptr;
     QTabWidget *m_optionTabs = nullptr;
 
-    QGroupBox *m_outputGroup = nullptr;
     QCheckBox *m_sameDirCheck = nullptr;
     QLineEdit *m_outputDirEdit = nullptr;
     QPushButton *m_outputDirButton = nullptr;
@@ -157,6 +181,5 @@ private:
     QPlainTextEdit *m_log = nullptr;
     QLabel *m_pandocStatus = nullptr;
 
-    QSplitter *m_mainSplitter = nullptr;
     QList<QAction *> m_busyDisabledActions;
 };

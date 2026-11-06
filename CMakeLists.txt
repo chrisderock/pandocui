@@ -25,6 +25,7 @@ set(PANDOCUI_CORE_SOURCES
     src/formatoptionswidget.h  src/formatoptionswidget.cpp
     src/presetstore.h          src/presetstore.cpp
     src/translation.h          src/translation.cpp
+    src/stepnavigator.h        src/stepnavigator.cpp
     src/mainwindow.h           src/mainwindow.cpp
 )
 qt_add_library(pandocui_core STATIC ${PANDOCUI_CORE_SOURCES})

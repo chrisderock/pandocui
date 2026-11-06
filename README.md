@@ -4,6 +4,13 @@ Grafische Oberfläche für [pandoc](https://pandoc.org), erstellt mit Qt 6 (Widg
 
 ## Ablauf
 
+Die Oberfläche führt als Wizard durch fünf Schritte. Links zeigt eine Schrittleiste alle
+Schritte mit einer Kurzfassung der jeweiligen Auswahl; erledigte Schritte sind mit einem
+Haken markiert und lassen sich jederzeit direkt anklicken. Rechts steht immer nur die
+Seite des aktuellen Schritts, unten führen „Zurück“ und „Weiter“ (Alt+Z / Alt+W) durch
+den Ablauf. Ein Schritt ist erst erreichbar, wenn die vorherigen vollständig sind – was
+noch fehlt, steht als Hinweis unten links.
+
 1. **Eingabedatei** wählen (Dialog, Pfad eintippen oder Datei ins Fenster ziehen).
    Das Eingabeformat wird anhand der Dateiendung erkannt, bei `.xml`/`.json` anhand
    des Inhalts. Mit „Format automatisch erkennen“ abgewählt lässt es sich manuell setzen.
@@ -16,8 +23,10 @@ Grafische Oberfläche für [pandoc](https://pandoc.org), erstellt mit Qt 6 (Widg
    leiten sich vom Namen der Eingabedatei ab, z. B. `bericht.md` → `bericht.docx`.
    Teilen sich mehrere Formate eine Endung, wird der Formatname eingefügt
    (`bericht.html`, `bericht.revealjs.html`). Die Eingabedatei wird nie überschrieben.
-5. **Konvertieren**: Die Formate werden nacheinander erzeugt; Fortschritt, Befehle,
-   Warnungen und Fehler erscheinen im Protokoll. Die Konvertierung lässt sich abbrechen.
+5. **Erzeugen**: Eine Zusammenfassung zeigt Eingabe, Zielordner und alle Ausgabedateien
+   samt Anzahl geänderter Optionen. „Konvertieren“ (Strg+Eingabe) erzeugt die Formate
+   nacheinander; Fortschritt, Befehle, Warnungen und Fehler erscheinen im Protokoll.
+   Die Konvertierung lässt sich abbrechen.
 
 Auswahl, Ordner und Optionen werden beim Beenden gespeichert (`QSettings`).
 
@@ -27,7 +36,7 @@ Ein Preset speichert die gewählten Ausgabeformate (in ihrer Reihenfolge) samt a
 Optionen; Eingabedatei und Ausgabeordner gehören nicht dazu.
 
 - **Speichern:** Diskettensymbol neben der Preset-Auswahl oder *Presets → Als Preset speichern …* (Strg+S)
-- **Laden:** Preset in der Auswahlliste über den Formaten anklicken
+- **Laden:** Preset in der Auswahlliste in Schritt 2 („Ausgabeformate“) anklicken
 - **Löschen:** Papierkorbsymbol oder *Presets → Preset löschen*
 - **Weitergeben:** *Presets → Preset exportieren … / importieren …* (JSON-Datei)
 
@@ -138,6 +147,7 @@ zusätzlich tatsächlich nach HTML, DOCX, GFM, ODT und – falls `pdflatex` vorh
 |-------|--------|
 | `src/pandocformats.*` | Formaterkennung, Dateiendungen, Beschreibungen, Optionsdefinitionen je Format, Argumentaufbau |
 | `src/pandocinfo.*` | pandoc finden, Version und Formatlisten abfragen |
+| `src/stepnavigator.*` | Schrittleiste des Wizards |
 | `src/formatoptionswidget.*` | Aus den Optionsdefinitionen erzeugte Eingabemaske je Format |
 | `src/presetstore.*` | Speichern, Laden, Import und Export von Presets (JSON) |
 | `src/translation.*` | Sprachauswahl und Laden der Übersetzungen |

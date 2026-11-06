@@ -62,10 +62,6 @@
         <translation>PandocUi – convert documents with pandoc</translation>
     </message>
     <message>
-        <source>1. Eingabedatei</source>
-        <translation>1. Input file</translation>
-    </message>
-    <message>
         <source>Datei auswählen oder in das Fenster ziehen …</source>
         <translation>Choose a file or drop it onto the window …</translation>
     </message>
@@ -84,10 +80,6 @@
     <message>
         <source>Eingabeformat:</source>
         <translation>Input format:</translation>
-    </message>
-    <message>
-        <source>2. Ausgabeformate</source>
-        <translation>2. Output formats</translation>
     </message>
     <message>
         <source>Gespeichertes Preset auswählen: übernimmt Ausgabeformate und deren Optionen</source>
@@ -118,20 +110,6 @@
         <translation>Description</translation>
     </message>
     <message>
-        <source>3. Optionen je Ausgabeformat</source>
-        <translation>3. Options per output format</translation>
-    </message>
-    <message>
-        <source>Bitte links mindestens ein Ausgabeformat ankreuzen.
-Für jedes Format erscheint hier ein eigener Reiter mit Optionen.</source>
-        <translation>Please tick at least one output format on the left.
-Each format gets its own tab with options here.</translation>
-    </message>
-    <message>
-        <source>4. Ausgabeordner</source>
-        <translation>4. Output folder</translation>
-    </message>
-    <message>
         <source>Ordner der Eingabedatei verwenden</source>
         <translation>Use folder of input file</translation>
     </message>
@@ -146,10 +124,6 @@ Each format gets its own tab with options here.</translation>
     <message>
         <source>Dateien:</source>
         <translation>Files:</translation>
-    </message>
-    <message>
-        <source>5. Ausgabe erzeugen</source>
-        <translation>5. Generate output</translation>
     </message>
     <message>
         <source>Konvertieren</source>
@@ -453,18 +427,6 @@ Each format gets its own tab with options here.</translation>
         </translation>
     </message>
     <message>
-        <source>pandoc wurde nicht gefunden</source>
-        <translation>pandoc was not found</translation>
-    </message>
-    <message>
-        <source>Eingabeformat auswählen</source>
-        <translation>choose the input format</translation>
-    </message>
-    <message>
-        <source>mindestens ein Ausgabeformat ankreuzen</source>
-        <translation>tick at least one output format</translation>
-    </message>
-    <message>
         <source>Alle gewählten Formate erzeugen</source>
         <translation>Generate all selected formats</translation>
     </message>
@@ -583,6 +545,139 @@ Restart now?</translation>
     <message>
         <source>Es läuft noch eine Konvertierung. Abbrechen und beenden?</source>
         <translation>A conversion is still running. Cancel it and quit?</translation>
+    </message>
+    <message>
+        <source>Eingabedatei</source>
+        <translation>Input file</translation>
+    </message>
+    <message>
+        <source>Ausgabeformate</source>
+        <translation>Output formats</translation>
+    </message>
+    <message>
+        <source>Optionen</source>
+        <translation>Options</translation>
+    </message>
+    <message>
+        <source>Erzeugen</source>
+        <translation>Generate</translation>
+    </message>
+    <message>
+        <source>Die Datei auswählen, die umgewandelt werden soll. Das Format wird automatisch erkannt und lässt sich bei Bedarf von Hand festlegen.</source>
+        <translation>Choose the file to convert. Its format is detected automatically and can be set manually if needed.</translation>
+    </message>
+    <message>
+        <source>Ein oder mehrere Formate ankreuzen, in die das Dokument umgewandelt wird – oder ein gespeichertes Preset laden.</source>
+        <translation>Tick one or more formats to convert the document to – or load a saved preset.</translation>
+    </message>
+    <message>
+        <source>Für jedes gewählte Format die Optionen festlegen. Unveränderte Werte überlässt PandocUi den Standardeinstellungen von pandoc.</source>
+        <translation>Set the options for each selected format. Values left unchanged use pandoc&apos;s defaults.</translation>
+    </message>
+    <message>
+        <source>Festlegen, wohin die Dateien geschrieben werden. Die Dateinamen leiten sich vom Namen der Eingabedatei ab.</source>
+        <translation>Choose where the files are written. File names are derived from the name of the input file.</translation>
+    </message>
+    <message>
+        <source>Zusammenfassung prüfen und die Umwandlung starten.</source>
+        <translation>Review the summary and start the conversion.</translation>
+    </message>
+    <message>
+        <source>Datei hierher ziehen</source>
+        <translation>Drop a file here</translation>
+    </message>
+    <message>
+        <source>Bitte zuerst in Schritt 2 mindestens ein Ausgabeformat ankreuzen.
+Für jedes Format erscheint hier ein eigener Reiter mit Optionen.</source>
+        <translation>Please tick at least one output format in step 2 first.
+Each format gets its own tab with options here.</translation>
+    </message>
+    <message>
+        <source>&amp;Zurück</source>
+        <translation>&amp;Back</translation>
+    </message>
+    <message>
+        <source>&amp;Weiter</source>
+        <translation>&amp;Next</translation>
+    </message>
+    <message>
+        <source>Bitte eine Eingabedatei auswählen.</source>
+        <translation>Please choose an input file.</translation>
+    </message>
+    <message>
+        <source>Bitte das Eingabeformat auswählen.</source>
+        <translation>Please choose the input format.</translation>
+    </message>
+    <message>
+        <source>Bitte mindestens ein Ausgabeformat ankreuzen.</source>
+        <translation>Please tick at least one output format.</translation>
+    </message>
+    <message>
+        <source>Bitte einen Ausgabeordner wählen.</source>
+        <translation>Please choose an output folder.</translation>
+    </message>
+    <message>
+        <source>pandoc wurde nicht gefunden.</source>
+        <translation>pandoc was not found.</translation>
+    </message>
+    <message>
+        <source>Noch keine Datei gewählt</source>
+        <translation>No file chosen yet</translation>
+    </message>
+    <message>
+        <source>Konvertierung läuft …</source>
+        <translation>Converting …</translation>
+    </message>
+    <message>
+        <source>Bereit</source>
+        <translation>Ready</translation>
+    </message>
+    <message>
+        <source>Noch nicht bereit</source>
+        <translation>Not ready yet</translation>
+    </message>
+    <message>
+        <source>Standardeinstellungen</source>
+        <translation>Default settings</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n Option(en) geändert</source>
+        <translation>
+            <numerusform>%n option changed</numerusform>
+            <numerusform>%n options changed</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Kein Ordner gewählt</source>
+        <translation>No folder chosen</translation>
+    </message>
+    <message>
+        <source>Schritt %1 von %2: %3</source>
+        <translation>Step %1 of %2: %3</translation>
+    </message>
+    <message>
+        <source>Alles bereit – „Konvertieren“ startet die Umwandlung.</source>
+        <translation>All set – “Convert” starts the conversion.</translation>
+    </message>
+    <message>
+        <source>Eingabedatei:</source>
+        <translation>Input file:</translation>
+    </message>
+    <message>
+        <source>Ausgabeordner:</source>
+        <translation>Output folder:</translation>
+    </message>
+    <message>
+        <source>Ausgabe:</source>
+        <translation>Output:</translation>
+    </message>
+    <message>
+        <source>Abgebrochen</source>
+        <translation>Cancelled</translation>
+    </message>
+    <message>
+        <source>%1 von %2 Dateien erzeugt</source>
+        <translation>%1 of %2 files generated</translation>
     </message>
 </context>
 <context>

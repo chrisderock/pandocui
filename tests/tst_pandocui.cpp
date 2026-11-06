@@ -38,6 +38,7 @@ private slots:
 
     void mainWindowBuildsJobs();
     void addPdfToExistingSelection();
+    void wizardNavigation();
     void presetStoreRoundTrip();
     void presetJsonErrors();
     void mainWindowPresets();
@@ -237,7 +238,7 @@ void TestPandocUi::mainWindowBuildsJobs()
     const QString shot = qEnvironmentVariable("PANDOCUI_SCREENSHOT");
     if (!shot.isEmpty()) {
         window.setInputFormat("markdown");
-        window.findChild<QCheckBox *>()->setChecked(true);
+        window.findChild<QCheckBox *>("autoDetectCheck")->setChecked(true);
         window.setSelectedOutputFormats({"html", "pdf", "docx", "epub"});
         window.setOutputDirectory(outDir);
         if (FormatOptionsWidget *w = window.optionsWidget("pdf")) {
@@ -253,7 +254,12 @@ void TestPandocUi::mainWindowBuildsJobs()
         window.show();
         QVERIFY(QTest::qWaitForWindowExposed(&window));
         QTest::qWait(200);
-        QVERIFY(window.grab().save(shot));
+        // Eine Aufnahme je Wizard-Schritt
+        for (int step = 0; step < MainWindow::StepCount; ++step) {
+            QVERIFY(window.setCurrentStep(step));
+            QTest::qWait(50);
+            QVERIFY(window.grab().save(QString(shot).replace(".png", QStringLiteral("_step%1.png").arg(step + 1))));
+        }
     }
 }
 
@@ -290,6 +296,38 @@ void TestPandocUi::addPdfToExistingSelection()
     QVERIFY2(minAfter.height() <= minBefore.height() && minAfter.width() <= minBefore.width(),
              qPrintable(QStringLiteral("%1x%2 -> %3x%4").arg(minBefore.width()).arg(minBefore.height())
                             .arg(minAfter.width()).arg(minAfter.height())));
+}
+
+void TestPandocUi::wizardNavigation()
+{
+    MainWindow window;
+    window.setOutputDirectory({}); // Ordner der Eingabedatei
+    window.setSelectedOutputFormats({"html"});
+    QCOMPARE(window.currentStep(), int(MainWindow::InputStep));
+
+    // Ohne Eingabedatei sind die folgenden Schritte gesperrt
+    QVERIFY(!window.stepProblem(MainWindow::InputStep).isEmpty());
+    QVERIFY(!window.isStepReachable(MainWindow::FormatsStep));
+    QVERIFY(!window.setCurrentStep(MainWindow::FormatsStep));
+    QCOMPARE(window.currentStep(), int(MainWindow::InputStep));
+
+    QVERIFY(window.openInputFile(m_sample));
+    QVERIFY(window.stepProblem(MainWindow::InputStep).isEmpty());
+    for (int step = MainWindow::FormatsStep; step < MainWindow::StepCount; ++step)
+        QVERIFY2(window.isStepReachable(step), qPrintable(QString::number(step)));
+
+    QVERIFY(window.setCurrentStep(MainWindow::OutputStep));
+    QCOMPARE(window.currentStep(), int(MainWindow::OutputStep));
+
+    // Fällt die Formatauswahl weg (z. B. per Preset), springt der Wizard zu Schritt 2 zurück
+    window.setSelectedOutputFormats({});
+    QCOMPARE(window.currentStep(), int(MainWindow::FormatsStep));
+    QVERIFY(!window.isStepReachable(MainWindow::OptionsStep));
+
+    window.setSelectedOutputFormats({"gfm"});
+    QVERIFY(window.setCurrentStep(MainWindow::RunStep));
+    QCOMPARE(window.currentStep(), int(MainWindow::RunStep));
+    QVERIFY(!window.setCurrentStep(MainWindow::StepCount)); // ungültig
 }
 
 void TestPandocUi::presetStoreRoundTrip()

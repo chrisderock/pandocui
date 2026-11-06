@@ -2,6 +2,7 @@
 
 #include "formatoptionswidget.h"
 #include "pandocformats.h"
+#include "stepnavigator.h"
 #include "translation.h"
 
 #include <QAction>
@@ -87,6 +88,7 @@ MainWindow::MainWindow(QWidget *parent)
     loadSettings();
     loadPandoc();
     refreshPresetList();
+    m_visitedSteps.insert(InputStep);
     updateState();
 }
 
@@ -117,9 +119,25 @@ void MainWindow::setupUi()
     });
     mainLayout->addWidget(m_pandocBanner);
 
-    // --- 1. Eingabedatei --------------------------------------------------
-    m_inputGroup = new QGroupBox(tr("1. Eingabedatei"));
-    auto *inputGrid = new QGridLayout(m_inputGroup);
+    // Texte der Schritte: Kurztitel (Schrittleiste), Seitentitel und Erklärung
+    m_stepTitles = {tr("Eingabedatei"), tr("Ausgabeformate"), tr("Optionen"),
+                    tr("Ausgabeordner"), tr("Erzeugen")};
+    m_stepDescriptions = {
+        tr("Die Datei auswählen, die umgewandelt werden soll. Das Format wird automatisch "
+           "erkannt und lässt sich bei Bedarf von Hand festlegen."),
+        tr("Ein oder mehrere Formate ankreuzen, in die das Dokument umgewandelt wird – "
+           "oder ein gespeichertes Preset laden."),
+        tr("Für jedes gewählte Format die Optionen festlegen. Unveränderte Werte "
+           "überlässt PandocUi den Standardeinstellungen von pandoc."),
+        tr("Festlegen, wohin die Dateien geschrieben werden. Die Dateinamen leiten sich "
+           "vom Namen der Eingabedatei ab."),
+        tr("Zusammenfassung prüfen und die Umwandlung starten."),
+    };
+
+    // --- Seite 1: Eingabedatei --------------------------------------------
+    auto *inputPage = new QWidget;
+    auto *inputGrid = new QGridLayout(inputPage);
+    inputGrid->setContentsMargins(0, 0, 0, 0);
 
     m_inputEdit = new QLineEdit;
     m_inputEdit->setPlaceholderText(tr("Datei auswählen oder in das Fenster ziehen …"));
@@ -143,35 +161,49 @@ void MainWindow::setupUi()
     connect(m_inputFormatCombo, &QComboBox::currentIndexChanged, this, &MainWindow::updateState);
 
     m_autoDetectCheck = new QCheckBox(tr("Format automatisch erkennen"));
+    m_autoDetectCheck->setObjectName(QStringLiteral("autoDetectCheck"));
     m_autoDetectCheck->setChecked(true);
     connect(m_autoDetectCheck, &QCheckBox::toggled, this, &MainWindow::onAutoDetectToggled);
 
     m_detectLabel = new QLabel;
     m_detectLabel->setTextFormat(Qt::RichText);
+    m_detectLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
     auto *formatRow = new QHBoxLayout;
     formatRow->addWidget(m_inputFormatCombo);
     formatRow->addWidget(m_autoDetectCheck);
-    formatRow->addSpacing(12);
-    formatRow->addWidget(m_detectLabel, 1);
+    formatRow->addStretch(1);
+
+    auto *dropHint = new QLabel(tr("Datei hierher ziehen"));
+    dropHint->setAlignment(Qt::AlignCenter);
+    dropHint->setMinimumHeight(90);
+    dropHint->setMaximumHeight(200);
+    dropHint->setEnabled(false);
+    dropHint->setStyleSheet(QStringLiteral(
+        "QLabel { border: 2px dashed palette(mid); border-radius: 8px; font-size: 13pt; }"));
 
     inputGrid->addWidget(new QLabel(tr("Datei:")), 0, 0);
     inputGrid->addWidget(m_inputEdit, 0, 1);
     inputGrid->addWidget(browseInput, 0, 2);
     inputGrid->addWidget(new QLabel(tr("Eingabeformat:")), 1, 0);
     inputGrid->addLayout(formatRow, 1, 1, 1, 2);
+    inputGrid->addWidget(m_detectLabel, 2, 1, 1, 2);
+    inputGrid->addItem(new QSpacerItem(0, 12), 3, 0);
+    inputGrid->addWidget(dropHint, 4, 0, 1, 3);
+    inputGrid->setRowStretch(4, 1);
+    inputGrid->setRowStretch(5, 2);
     inputGrid->setColumnStretch(1, 1);
-    mainLayout->addWidget(m_inputGroup);
 
-    // --- 2. Ausgabeformate --------------------------------------------------
-    auto *formatsGroup = new QGroupBox(tr("2. Ausgabeformate"));
-    auto *formatsLayout = new QVBoxLayout(formatsGroup);
+    // --- Seite 2: Ausgabeformate ------------------------------------------
+    auto *formatsPage = new QWidget;
+    auto *formatsLayout = new QVBoxLayout(formatsPage);
+    formatsLayout->setContentsMargins(0, 0, 0, 0);
 
     // Presets: gespeicherte Kombinationen aus Formaten und Optionen
     auto *presetRow = new QHBoxLayout;
     m_presetCombo = new QComboBox;
     m_presetCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
-    m_presetCombo->setMinimumContentsLength(12);
+    m_presetCombo->setMinimumContentsLength(24);
     m_presetCombo->setToolTip(tr("Gespeichertes Preset auswählen: übernimmt Ausgabeformate "
                                  "und deren Optionen"));
     connect(m_presetCombo, &QComboBox::activated, this, [this](int index) {
@@ -187,16 +219,17 @@ void MainWindow::setupUi()
     m_presetDeleteButton->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
     m_presetDeleteButton->setToolTip(tr("Gewähltes Preset löschen"));
     connect(m_presetDeleteButton, &QToolButton::clicked, this, &MainWindow::deleteCurrentPreset);
-    presetRow->addWidget(new QLabel(tr("Preset:")));
-    presetRow->addWidget(m_presetCombo, 1);
-    presetRow->addWidget(presetSave);
-    presetRow->addWidget(m_presetDeleteButton);
-    formatsLayout->addLayout(presetRow);
-
     m_formatFilter = new QLineEdit;
     m_formatFilter->setPlaceholderText(tr("Formate filtern …"));
     m_formatFilter->setClearButtonEnabled(true);
     connect(m_formatFilter, &QLineEdit::textChanged, this, &MainWindow::applyFormatFilter);
+    presetRow->addWidget(new QLabel(tr("Preset:")));
+    presetRow->addWidget(m_presetCombo);
+    presetRow->addWidget(presetSave);
+    presetRow->addWidget(m_presetDeleteButton);
+    presetRow->addSpacing(16);
+    presetRow->addWidget(m_formatFilter, 1);
+    formatsLayout->addLayout(presetRow);
 
     m_outputTree = new QTreeWidget;
     m_outputTree->setColumnCount(2);
@@ -216,15 +249,15 @@ void MainWindow::setupUi()
     m_selectionLabel = new QLabel;
     // Lange Auswahllisten dürfen das Fenster nicht verbreitern
     m_selectionLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    formatsLayout->addWidget(m_formatFilter);
     formatsLayout->addWidget(m_outputTree, 1);
     formatsLayout->addWidget(m_selectionLabel);
 
-    // --- 3. Optionen -----------------------------------------------------
-    auto *optionsGroup = new QGroupBox(tr("3. Optionen je Ausgabeformat"));
-    auto *optionsLayout = new QVBoxLayout(optionsGroup);
+    // --- Seite 3: Optionen ------------------------------------------------
+    auto *optionsPage = new QWidget;
+    auto *optionsLayout = new QVBoxLayout(optionsPage);
+    optionsLayout->setContentsMargins(0, 0, 0, 0);
     m_optionsStack = new QStackedWidget;
-    auto *hint = new QLabel(tr("Bitte links mindestens ein Ausgabeformat ankreuzen.\n"
+    auto *hint = new QLabel(tr("Bitte zuerst in Schritt 2 mindestens ein Ausgabeformat ankreuzen.\n"
                                "Für jedes Format erscheint hier ein eigener Reiter mit Optionen."));
     hint->setAlignment(Qt::AlignCenter);
     hint->setWordWrap(true);
@@ -245,16 +278,29 @@ void MainWindow::setupUi()
     m_optionsStack->addWidget(m_optionTabs);
     optionsLayout->addWidget(m_optionsStack);
 
-    m_formatSplitter = new QSplitter(Qt::Horizontal);
-    m_formatSplitter->addWidget(formatsGroup);
-    m_formatSplitter->addWidget(optionsGroup);
-    m_formatSplitter->setStretchFactor(0, 2);
-    m_formatSplitter->setStretchFactor(1, 3);
-    m_formatSplitter->setChildrenCollapsible(false);
+    // Listen, die mit der Formatauswahl wachsen, kommen in Bereiche mit fester
+    // Mindesthöhe. So ändert sich die Mindestgröße des Fensters nicht (sonst
+    // Wayland-Protokollfehler bei maximiertem Fenster).
+    auto makeScrollingLabel = [](QLabel *label) {
+        label->setTextFormat(Qt::RichText);
+        label->setWordWrap(true);
+        label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        label->setAutoFillBackground(false);
+        auto *scroll = new QScrollArea;
+        scroll->setWidget(label);
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        scroll->setMinimumHeight(QFontMetrics(label->font()).lineSpacing() * 3 + 6);
+        scroll->viewport()->setAutoFillBackground(false);
+        return scroll;
+    };
 
-    // --- 4. Ausgabeordner ------------------------------------------------
-    m_outputGroup = new QGroupBox(tr("4. Ausgabeordner"));
-    auto *outputGrid = new QGridLayout(m_outputGroup);
+    // --- Seite 4: Ausgabeordner -------------------------------------------
+    auto *outputPage = new QWidget;
+    auto *outputGrid = new QGridLayout(outputPage);
+    outputGrid->setContentsMargins(0, 0, 0, 0);
     m_sameDirCheck = new QCheckBox(tr("Ordner der Eingabedatei verwenden"));
     connect(m_sameDirCheck, &QCheckBox::toggled, this, &MainWindow::onSameDirToggled);
     m_outputDirEdit = new QLineEdit;
@@ -268,42 +314,25 @@ void MainWindow::setupUi()
                                         tr("Durchsuchen …"));
     connect(m_outputDirButton, &QPushButton::clicked, this, &MainWindow::browseOutputDirectory);
     m_outputPreview = new QLabel;
-    m_outputPreview->setTextFormat(Qt::RichText);
-    m_outputPreview->setWordWrap(true);
-    m_outputPreview->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_outputPreview->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    // Die Liste wächst mit der Formatauswahl. In einem Bereich fester Höhe darf sie
-    // die Mindestgröße des Fensters nicht verändern (sonst Wayland-Protokollfehler
-    // bei maximiertem Fenster).
-    auto *previewScroll = new QScrollArea;
-    previewScroll->setWidget(m_outputPreview);
-    previewScroll->setWidgetResizable(true);
-    previewScroll->setFrameShape(QFrame::NoFrame);
-    previewScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    previewScroll->setFixedHeight(QFontMetrics(m_outputPreview->font()).lineSpacing() * 3 + 6);
-    previewScroll->viewport()->setAutoFillBackground(false);
-    m_outputPreview->setAutoFillBackground(false);
 
-    outputGrid->addWidget(new QLabel(tr("Ordner:")), 0, 0);
-    outputGrid->addWidget(m_outputDirEdit, 0, 1);
-    outputGrid->addWidget(m_outputDirButton, 0, 2);
-    outputGrid->addWidget(m_sameDirCheck, 0, 3);
-    outputGrid->addWidget(new QLabel(tr("Dateien:")), 1, 0, Qt::AlignTop);
-    outputGrid->addWidget(previewScroll, 1, 1, 1, 3);
+    outputGrid->addWidget(m_sameDirCheck, 0, 1, 1, 2);
+    outputGrid->addWidget(new QLabel(tr("Ordner:")), 1, 0);
+    outputGrid->addWidget(m_outputDirEdit, 1, 1);
+    outputGrid->addWidget(m_outputDirButton, 1, 2);
+    outputGrid->addItem(new QSpacerItem(0, 12), 2, 0);
+    outputGrid->addWidget(new QLabel(tr("Dateien:")), 3, 0, Qt::AlignTop);
+    outputGrid->addWidget(makeScrollingLabel(m_outputPreview), 3, 1, 1, 2);
+    outputGrid->setRowStretch(3, 1);
     outputGrid->setColumnStretch(1, 1);
 
-    // --- 5. Konvertierung ------------------------------------------------
-    auto *runGroup = new QGroupBox(tr("5. Ausgabe erzeugen"));
-    auto *runLayout = new QVBoxLayout(runGroup);
-    auto *buttonRow = new QHBoxLayout;
-    m_convertButton = new QPushButton(style()->standardIcon(QStyle::SP_MediaPlay),
-                                      tr("Konvertieren"));
-    m_convertButton->setDefault(true);
-    QFont bold = m_convertButton->font();
-    bold.setBold(true);
-    m_convertButton->setFont(bold);
-    m_convertButton->setMinimumWidth(160);
-    connect(m_convertButton, &QPushButton::clicked, this, &MainWindow::startConversion);
+    // --- Seite 5: Erzeugen ------------------------------------------------
+    auto *runPage = new QWidget;
+    auto *runLayout = new QVBoxLayout(runPage);
+    runLayout->setContentsMargins(0, 0, 0, 0);
+    m_summaryLabel = new QLabel;
+    runLayout->addWidget(makeScrollingLabel(m_summaryLabel), 2);
+
+    auto *progressRow = new QHBoxLayout;
     m_cancelButton = new QPushButton(style()->standardIcon(QStyle::SP_BrowserStop),
                                      tr("Abbrechen"));
     m_cancelButton->setEnabled(false);
@@ -314,11 +343,10 @@ void MainWindow::setupUi()
     m_progress->setFormat(tr("%v von %m"));
     m_progress->setTextVisible(false);
     m_openFolderCheck = new QCheckBox(tr("Ausgabeordner danach öffnen"));
-
-    buttonRow->addWidget(m_convertButton);
-    buttonRow->addWidget(m_cancelButton);
-    buttonRow->addWidget(m_progress, 1);
-    buttonRow->addWidget(m_openFolderCheck);
+    progressRow->addWidget(m_progress, 1);
+    progressRow->addWidget(m_cancelButton);
+    progressRow->addWidget(m_openFolderCheck);
+    runLayout->addLayout(progressRow);
 
     m_log = new QPlainTextEdit;
     m_log->setReadOnly(true);
@@ -326,31 +354,86 @@ void MainWindow::setupUi()
     m_log->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     m_log->setPlaceholderText(tr("Protokoll der Konvertierung"));
     m_log->setMinimumHeight(48);
+    runLayout->addWidget(m_log, 3);
 
-    runLayout->addLayout(buttonRow);
-    runLayout->addWidget(m_log, 1);
+    // --- Gerüst: Schrittleiste | Seite --------------------------------------
+    m_navigator = new StepNavigator;
+    m_navigator->setSteps(m_stepTitles);
+    connect(m_navigator, &StepNavigator::stepClicked, this, &MainWindow::setCurrentStep);
 
-    auto *bottom = new QWidget;
-    auto *bottomLayout = new QVBoxLayout(bottom);
-    bottomLayout->setContentsMargins(0, 0, 0, 0);
-    bottomLayout->addWidget(m_outputGroup);
-    bottomLayout->addWidget(runGroup, 1);
+    m_pages = new QStackedWidget;
+    for (QWidget *page : {inputPage, formatsPage, optionsPage, outputPage, runPage})
+        m_pages->addWidget(page);
 
-    m_mainSplitter = new QSplitter(Qt::Vertical);
-    m_mainSplitter->addWidget(m_formatSplitter);
-    m_mainSplitter->addWidget(bottom);
-    m_mainSplitter->setStretchFactor(0, 3);
-    m_mainSplitter->setStretchFactor(1, 2);
-    m_mainSplitter->setChildrenCollapsible(false);
-    m_mainSplitter->setSizes({560, 280});
-    mainLayout->addWidget(m_mainSplitter, 1);
+    m_pageTitle = new QLabel;
+    QFont titleFont = m_pageTitle->font();
+    titleFont.setPointSizeF(titleFont.pointSizeF() * 1.4);
+    titleFont.setBold(true);
+    m_pageTitle->setFont(titleFont);
+    m_pageDescription = new QLabel;
+    m_pageDescription->setWordWrap(true);
+    m_pageDescription->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+
+    auto *pageArea = new QWidget;
+    auto *pageLayout = new QVBoxLayout(pageArea);
+    pageLayout->setContentsMargins(16, 4, 4, 0);
+    pageLayout->addWidget(m_pageTitle);
+    pageLayout->addWidget(m_pageDescription);
+    auto *headerLine = new QFrame;
+    headerLine->setFrameShape(QFrame::HLine);
+    headerLine->setFrameShadow(QFrame::Sunken);
+    pageLayout->addWidget(headerLine);
+    pageLayout->addSpacing(6);
+    pageLayout->addWidget(m_pages, 1);
+
+    auto *body = new QHBoxLayout;
+    body->addWidget(m_navigator);
+    auto *navLine = new QFrame;
+    navLine->setFrameShape(QFrame::VLine);
+    navLine->setFrameShadow(QFrame::Sunken);
+    body->addWidget(navLine);
+    body->addWidget(pageArea, 1);
+    mainLayout->addLayout(body, 1);
+
+    // --- Fußzeile: Hinweis, Zurück, Weiter / Konvertieren -------------------
+    auto *footerLine = new QFrame;
+    footerLine->setFrameShape(QFrame::HLine);
+    footerLine->setFrameShadow(QFrame::Sunken);
+    mainLayout->addWidget(footerLine);
+
+    auto *footer = new QHBoxLayout;
+    m_footerHint = new QLabel;
+    m_footerHint->setTextFormat(Qt::RichText);
+    m_footerHint->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    m_backButton = new QPushButton(style()->standardIcon(QStyle::SP_ArrowBack), tr("&Zurück"));
+    connect(m_backButton, &QPushButton::clicked, this, [this] { setCurrentStep(currentStep() - 1); });
+    m_nextButton = new QPushButton(tr("&Weiter"));
+    m_nextButton->setIcon(style()->standardIcon(QStyle::SP_ArrowForward));
+    m_nextButton->setLayoutDirection(Qt::RightToLeft); // Pfeil rechts vom Text
+    connect(m_nextButton, &QPushButton::clicked, this, [this] { setCurrentStep(currentStep() + 1); });
+    m_convertButton = new QPushButton(style()->standardIcon(QStyle::SP_MediaPlay),
+                                      tr("Konvertieren"));
+    QFont bold = m_convertButton->font();
+    bold.setBold(true);
+    m_convertButton->setFont(bold);
+    m_nextButton->setFont(bold);
+    m_convertButton->setMinimumWidth(160);
+    m_nextButton->setMinimumWidth(120);
+    m_backButton->setMinimumWidth(120);
+    connect(m_convertButton, &QPushButton::clicked, this, &MainWindow::startConversion);
+
+    footer->addWidget(m_footerHint, 1);
+    footer->addWidget(m_backButton);
+    footer->addWidget(m_nextButton);
+    footer->addWidget(m_convertButton);
+    mainLayout->addLayout(footer);
 
     setCentralWidget(central);
 
     m_pandocStatus = new QLabel;
     statusBar()->addPermanentWidget(m_pandocStatus);
 
-    resize(1180, 860);
+    resize(1100, 760);
 }
 
 void MainWindow::setupMenus()
@@ -446,8 +529,6 @@ void MainWindow::loadSettings()
     m_openFolderCheck->setChecked(settings.value(QStringLiteral("openFolderAfter"), false).toBool());
 
     restoreGeometry(settings.value(QStringLiteral("geometry")).toByteArray());
-    m_mainSplitter->restoreState(settings.value(QStringLiteral("mainSplitter")).toByteArray());
-    m_formatSplitter->restoreState(settings.value(QStringLiteral("formatSplitter")).toByteArray());
 }
 
 void MainWindow::saveSettings()
@@ -464,8 +545,6 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("selectedFormats"), m_selectedOrder);
     settings.setValue(QStringLiteral("currentPreset"), m_currentPresetName);
     settings.setValue(QStringLiteral("geometry"), saveGeometry());
-    settings.setValue(QStringLiteral("mainSplitter"), m_mainSplitter->saveState());
-    settings.setValue(QStringLiteral("formatSplitter"), m_formatSplitter->saveState());
 
     settings.remove(QStringLiteral("options"));
     settings.beginGroup(QStringLiteral("options"));
@@ -609,6 +688,8 @@ bool MainWindow::openInputFile(const QString &path)
 
     m_inputPath = fi.absoluteFilePath();
     m_lastInputDir = fi.absolutePath();
+    m_lastResult.clear();
+    m_lastResultOk = false;
     {
         const QSignalBlocker blocker(m_inputEdit);
         m_inputEdit->setText(native(m_inputPath));
@@ -745,6 +826,8 @@ void MainWindow::onOutputItemChanged(QTreeWidgetItem *item, int column)
 
     const QString format = item->data(0, FormatRole).toString();
     const bool checked = item->checkState(0) == Qt::Checked;
+    m_lastResult.clear();
+    m_lastResultOk = false;
     if (checked && !m_selectedOrder.contains(format)) {
         m_selectedOrder.append(format);
         addOptionsTab(format);
@@ -1097,13 +1180,13 @@ QList<ConversionJob> MainWindow::buildJobs() const
 
 void MainWindow::updateState()
 {
-    if (!m_convertButton)
-        return; // noch im Aufbau
+    if (!m_convertButton || m_updating)
+        return; // noch im Aufbau bzw. bereits in Arbeit
+    m_updating = true;
 
     const bool hasInput = !m_inputPath.isEmpty() && QFileInfo(m_inputPath).isFile();
-    const QString outDir = outputDirectory();
 
-    // Vorschau der Ausgabedateien
+    // Vorschau der Ausgabedateien (Schritt 4)
     QStringList lines;
     for (const QString &format : std::as_const(m_selectedOrder)) {
         const QString path = outputPathFor(format);
@@ -1116,7 +1199,7 @@ void MainWindow::updateState()
     m_outputPreview->setText(lines.isEmpty() ? tr("<i>Keine Ausgabeformate gewählt</i>")
                                              : lines.join(QStringLiteral("<br>")));
 
-    // Befehlsvorschau je Format
+    // Befehlsvorschau je Format (Schritt 3)
     const QString program = m_pandocPath.isEmpty() ? QStringLiteral("pandoc") : m_pandocPath;
     for (auto it = m_optionWidgets.cbegin(); it != m_optionWidgets.cend(); ++it)
         it.value()->setCommandPreview(ConversionRunner::formatCommandLine(program, argumentsFor(it.key())));
@@ -1127,24 +1210,187 @@ void MainWindow::updateState()
                                         .arg(m_selectedOrder.join(QStringLiteral(", "))));
     m_selectionLabel->setToolTip(m_selectionLabel->text());
 
-    // Bereitschaft prüfen
+    // Bereitschaft zum Konvertieren: alle Schritte vollständig
     QStringList missing;
-    if (m_pandocPath.isEmpty())
-        missing << tr("pandoc wurde nicht gefunden");
-    if (!hasInput)
-        missing << tr("Eingabedatei auswählen");
-    else if (currentInputFormat().isEmpty())
-        missing << tr("Eingabeformat auswählen");
-    if (m_selectedOrder.isEmpty())
-        missing << tr("mindestens ein Ausgabeformat ankreuzen");
-    if (outDir.isEmpty() && hasInput)
-        missing << tr("Ausgabeordner auswählen");
-
+    for (int step = 0; step < StepCount; ++step) {
+        const QString problem = stepProblem(step);
+        if (!problem.isEmpty())
+            missing << problem;
+    }
     const bool ready = missing.isEmpty() && !m_runner->isRunning();
     m_convertButton->setEnabled(ready);
     m_convertButton->setToolTip(missing.isEmpty()
                                     ? tr("Alle gewählten Formate erzeugen")
                                     : tr("Noch erforderlich:\n• %1").arg(missing.join(QStringLiteral("\n• "))));
+
+    updateWizard();
+    m_updating = false;
+}
+
+// ---------------------------------------------------------------------------
+// Wizard
+// ---------------------------------------------------------------------------
+
+int MainWindow::currentStep() const
+{
+    return m_pages ? m_pages->currentIndex() : int(InputStep);
+}
+
+QString MainWindow::stepProblem(int step) const
+{
+    switch (step) {
+    case InputStep:
+        if (m_inputPath.isEmpty() || !QFileInfo(m_inputPath).isFile())
+            return tr("Bitte eine Eingabedatei auswählen.");
+        if (currentInputFormat().isEmpty())
+            return tr("Bitte das Eingabeformat auswählen.");
+        return {};
+    case FormatsStep:
+        return m_selectedOrder.isEmpty() ? tr("Bitte mindestens ein Ausgabeformat ankreuzen.")
+                                         : QString();
+    case OptionsStep:
+        return {};
+    case OutputStep:
+        return outputDirectory().isEmpty() ? tr("Bitte einen Ausgabeordner wählen.") : QString();
+    case RunStep:
+        return m_pandocPath.isEmpty() ? tr("pandoc wurde nicht gefunden.") : QString();
+    default:
+        return {};
+    }
+}
+
+bool MainWindow::isStepReachable(int step) const
+{
+    if (step < 0 || step >= StepCount)
+        return false;
+    for (int previous = 0; previous < step; ++previous) {
+        if (!stepProblem(previous).isEmpty())
+            return false;
+    }
+    return true;
+}
+
+bool MainWindow::setCurrentStep(int step)
+{
+    if (!isStepReachable(step) || (m_runner->isRunning() && step != RunStep))
+        return false;
+    m_pages->setCurrentIndex(step);
+    m_visitedSteps.insert(step);
+    if (!m_updating)
+        updateState();
+    return true;
+}
+
+void MainWindow::updateWizard()
+{
+    // Wurde der aktuelle Schritt unerreichbar (z. B. Preset ohne passende Formate
+    // geladen), zum ersten unvollständigen Schritt zurückkehren.
+    if (!isStepReachable(currentStep())) {
+        int step = 0;
+        while (step < currentStep() && stepProblem(step).isEmpty())
+            ++step;
+        m_pages->setCurrentIndex(step);
+        m_visitedSteps.insert(step);
+    }
+    const int current = currentStep();
+    const bool running = m_runner->isRunning();
+
+    // Kurzfassungen in der Schrittleiste
+    QString input = tr("Noch keine Datei gewählt");
+    if (!m_inputPath.isEmpty()) {
+        input = QFileInfo(m_inputPath).fileName();
+        if (!currentInputFormat().isEmpty())
+            input += QStringLiteral(" · ") + currentInputFormat();
+    }
+    int changedOptions = 0;
+    for (const QString &format : std::as_const(m_selectedOrder)) {
+        if (const FormatOptionsWidget *w = m_optionWidgets.value(format))
+            changedOptions += int(PandocFormats::nonDefaultValues(format, w->values()).size());
+    }
+    const QString outDir = outputDirectory();
+    QString run;
+    if (running)
+        run = tr("Konvertierung läuft …");
+    else if (!m_lastResult.isEmpty())
+        run = m_lastResult;
+    else
+        run = isStepReachable(RunStep) && stepProblem(RunStep).isEmpty() ? tr("Bereit")
+                                                                          : tr("Noch nicht bereit");
+
+    const QStringList summaries = {
+        input,
+        m_selectedOrder.isEmpty() ? tr("Kein Format gewählt") : m_selectedOrder.join(QStringLiteral(", ")),
+        m_selectedOrder.isEmpty() ? QStringLiteral("–")
+        : changedOptions == 0     ? tr("Standardeinstellungen")
+                                  : tr("%n Option(en) geändert", nullptr, changedOptions),
+        outDir.isEmpty() ? tr("Kein Ordner gewählt") : native(outDir),
+        run,
+    };
+
+    m_navigator->setCurrent(current);
+    for (int step = 0; step < StepCount; ++step) {
+        const bool done = step == RunStep ? m_lastResultOk
+                                          : m_visitedSteps.contains(step) && stepProblem(step).isEmpty();
+        m_navigator->setStepState(step, isStepReachable(step) && (!running || step == RunStep), done);
+        m_navigator->setSummary(step, summaries.value(step));
+    }
+
+    // Kopf der Seite
+    m_pageTitle->setText(tr("Schritt %1 von %2: %3")
+                             .arg(current + 1)
+                             .arg(int(StepCount))
+                             .arg(m_stepTitles.value(current)));
+    m_pageDescription->setText(m_stepDescriptions.value(current));
+    m_summaryLabel->setText(summaryHtml());
+
+    // Fußzeile
+    const QString problem = stepProblem(current);
+    const bool lastStep = current == RunStep;
+    m_backButton->setEnabled(current > 0 && !running);
+    m_nextButton->setVisible(!lastStep);
+    m_nextButton->setEnabled(problem.isEmpty() && !running);
+    m_nextButton->setToolTip(problem);
+    m_convertButton->setVisible(lastStep);
+    if (!problem.isEmpty())
+        m_footerHint->setText(QStringLiteral("<span style=\"color:#d68910\">⚠ %1</span>")
+                                  .arg(problem.toHtmlEscaped()));
+    else if (lastStep && !running && m_convertButton->isEnabled())
+        m_footerHint->setText(tr("Alles bereit – „Konvertieren“ startet die Umwandlung."));
+    else
+        m_footerHint->clear();
+}
+
+QString MainWindow::summaryHtml() const
+{
+    const bool hasInput = !m_inputPath.isEmpty();
+    QString html = QStringLiteral("<table cellspacing=\"6\">");
+    auto row = [&html](const QString &label, const QString &value) {
+        html += QStringLiteral("<tr><td valign=\"top\"><b>%1</b></td><td>%2</td></tr>").arg(label, value);
+    };
+
+    row(tr("Eingabedatei:"),
+        hasInput ? QStringLiteral("%1 &nbsp;<span style=\"color:gray\">(%2)</span>")
+                       .arg(native(m_inputPath).toHtmlEscaped(), currentInputFormat().toHtmlEscaped())
+                 : QStringLiteral("–"));
+    row(tr("Ausgabeordner:"),
+        outputDirectory().isEmpty() ? QStringLiteral("–") : native(outputDirectory()).toHtmlEscaped());
+
+    QStringList outputs;
+    for (const QString &format : m_selectedOrder) {
+        const FormatOptionsWidget *w = m_optionWidgets.value(format);
+        const int changed = w ? int(PandocFormats::nonDefaultValues(format, w->values()).size()) : 0;
+        const QString path = outputPathFor(format);
+        QString line = QStringLiteral("<b>%1</b> &nbsp;<span style=\"color:gray\">(%2 · %3)</span>")
+                           .arg(QFileInfo(path).fileName().toHtmlEscaped(), format,
+                                changed == 0 ? tr("Standardeinstellungen")
+                                             : tr("%n Option(en) geändert", nullptr, changed));
+        if (hasInput && QFileInfo::exists(path))
+            line += tr(" &nbsp;<i style=\"color:#d68910\">existiert – wird überschrieben</i>");
+        outputs << line;
+    }
+    row(tr("Ausgabe:"), outputs.isEmpty() ? QStringLiteral("–") : outputs.join(QStringLiteral("<br>")));
+    html += QStringLiteral("</table>");
+    return html;
 }
 
 void MainWindow::startConversion()
@@ -1152,6 +1398,7 @@ void MainWindow::startConversion()
     updateState();
     if (m_runner->isRunning() || !m_convertButton->isEnabled())
         return;
+    setCurrentStep(RunStep); // z. B. bei Start über Strg+Eingabe aus einem früheren Schritt
 
     const QString outDir = outputDirectory();
     QDir dir(outDir);
@@ -1177,6 +1424,8 @@ void MainWindow::startConversion()
     }
 
     saveSettings();
+    m_lastResult.clear();
+    m_lastResultOk = false;
     setBusy(true);
     m_progress->setRange(0, int(jobs.size()));
     m_progress->setValue(0);
@@ -1207,6 +1456,9 @@ void MainWindow::onJobFinished(int index, const ConversionJob &job, bool success
 
 void MainWindow::onConversionFinished(int succeeded, int failed, bool cancelled)
 {
+    m_lastResultOk = !cancelled && failed == 0;
+    m_lastResult = cancelled ? tr("Abgebrochen")
+                             : tr("%1 von %2 Dateien erzeugt").arg(succeeded).arg(succeeded + failed);
     setBusy(false);
     QString summary;
     if (cancelled)
@@ -1224,9 +1476,10 @@ void MainWindow::onConversionFinished(int succeeded, int failed, bool cancelled)
 
 void MainWindow::setBusy(bool busy)
 {
-    m_inputGroup->setEnabled(!busy);
-    m_formatSplitter->setEnabled(!busy);
-    m_outputGroup->setEnabled(!busy);
+    // Während der Umwandlung bleiben nur Schritt 5 und "Abbrechen" bedienbar
+    for (int step = 0; step < RunStep; ++step)
+        m_pages->widget(step)->setEnabled(!busy);
+    m_openFolderCheck->setEnabled(!busy);
     m_cancelButton->setEnabled(busy);
     for (QAction *action : std::as_const(m_busyDisabledActions))
         action->setEnabled(!busy);
