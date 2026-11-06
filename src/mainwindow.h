@@ -2,6 +2,7 @@
 
 #include "conversionrunner.h"
 #include "pandocinfo.h"
+#include "presetstore.h"
 
 #include <QHash>
 #include <QMainWindow>
@@ -20,6 +21,7 @@ class QPushButton;
 class QSplitter;
 class QStackedWidget;
 class QTabWidget;
+class QToolButton;
 class QTreeWidget;
 class QTreeWidgetItem;
 
@@ -53,6 +55,14 @@ public:
     QList<ConversionJob> buildJobs() const;
     QString pandocExecutable() const { return m_pandocPath; }
 
+    // Presets: Ausgabeformate samt Optionen
+    Preset currentPreset(const QString &name = {}) const;
+    // Übernimmt Formate und Optionen; liefert die nicht verfügbaren Formate zurück.
+    QStringList applyPreset(const Preset &preset);
+    bool loadPreset(const QString &name);
+    QString currentPresetName() const { return m_currentPresetName; }
+    const PresetStore &presetStore() const { return m_presets; }
+
 protected:
     void closeEvent(QCloseEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -84,6 +94,12 @@ private:
     void addOptionsTab(const QString &format);
     void removeOptionsTab(const QString &format);
 
+    void refreshPresetList();
+    void savePresetAs();
+    void deleteCurrentPreset();
+    void importPreset();
+    void exportPreset();
+
     QStringList argumentsFor(const QString &format) const;
     void updateState();
 
@@ -107,6 +123,8 @@ private:
     QHash<QString, FormatOptionsWidget *> m_optionWidgets;
     QHash<QString, QVariantMap> m_savedOptions;
     ConversionRunner *m_runner;
+    PresetStore m_presets;
+    QString m_currentPresetName;
 
     // Oberfläche
     QLabel *m_pandocBanner = nullptr;
@@ -117,6 +135,8 @@ private:
     QLabel *m_detectLabel = nullptr;
 
     QSplitter *m_formatSplitter = nullptr;
+    QComboBox *m_presetCombo = nullptr;
+    QToolButton *m_presetDeleteButton = nullptr;
     QLineEdit *m_formatFilter = nullptr;
     QTreeWidget *m_outputTree = nullptr;
     QLabel *m_selectionLabel = nullptr;

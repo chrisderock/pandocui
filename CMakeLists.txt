@@ -23,6 +23,7 @@ qt_add_library(pandocui_core STATIC
     src/pandocinfo.h           src/pandocinfo.cpp
     src/conversionrunner.h     src/conversionrunner.cpp
     src/formatoptionswidget.h  src/formatoptionswidget.cpp
+    src/presetstore.h          src/presetstore.cpp
     src/mainwindow.h           src/mainwindow.cpp
 )
 target_include_directories(pandocui_core PUBLIC src)

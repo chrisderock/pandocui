@@ -37,6 +37,8 @@
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTime>
+#include <QToolButton>
+#include <QInputDialog>
 #include <QTreeWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -81,6 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     loadSettings();
     loadPandoc();
+    refreshPresetList();
     updateState();
 }
 
@@ -160,6 +163,33 @@ void MainWindow::setupUi()
     // --- 2. Ausgabeformate --------------------------------------------------
     auto *formatsGroup = new QGroupBox(tr("2. Ausgabeformate"));
     auto *formatsLayout = new QVBoxLayout(formatsGroup);
+
+    // Presets: gespeicherte Kombinationen aus Formaten und Optionen
+    auto *presetRow = new QHBoxLayout;
+    m_presetCombo = new QComboBox;
+    m_presetCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    m_presetCombo->setMinimumContentsLength(12);
+    m_presetCombo->setToolTip(tr("Gespeichertes Preset auswählen: übernimmt Ausgabeformate "
+                                 "und deren Optionen"));
+    connect(m_presetCombo, &QComboBox::activated, this, [this](int index) {
+        const QString name = m_presetCombo->itemData(index).toString();
+        if (!name.isEmpty())
+            loadPreset(name);
+    });
+    auto *presetSave = new QToolButton;
+    presetSave->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
+    presetSave->setToolTip(tr("Aktuelle Formate und Optionen als Preset speichern"));
+    connect(presetSave, &QToolButton::clicked, this, &MainWindow::savePresetAs);
+    m_presetDeleteButton = new QToolButton;
+    m_presetDeleteButton->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
+    m_presetDeleteButton->setToolTip(tr("Gewähltes Preset löschen"));
+    connect(m_presetDeleteButton, &QToolButton::clicked, this, &MainWindow::deleteCurrentPreset);
+    presetRow->addWidget(new QLabel(tr("Preset:")));
+    presetRow->addWidget(m_presetCombo, 1);
+    presetRow->addWidget(presetSave);
+    presetRow->addWidget(m_presetDeleteButton);
+    formatsLayout->addLayout(presetRow);
+
     m_formatFilter = new QLineEdit;
     m_formatFilter->setPlaceholderText(tr("Formate filtern …"));
     m_formatFilter->setClearButtonEnabled(true);
@@ -337,6 +367,24 @@ void MainWindow::setupMenus()
     QAction *quitAction = fileMenu->addAction(tr("&Beenden"), this, &QWidget::close);
     quitAction->setShortcut(QKeySequence::Quit);
 
+    QMenu *presetMenu = menuBar()->addMenu(tr("&Presets"));
+    QAction *savePresetAction = presetMenu->addAction(
+        style()->standardIcon(QStyle::SP_DialogSaveButton), tr("Als Preset &speichern …"), this,
+        &MainWindow::savePresetAs);
+    savePresetAction->setShortcut(QKeySequence::Save);
+    QAction *deletePresetAction = presetMenu->addAction(tr("Preset &löschen"), this,
+                                                        &MainWindow::deleteCurrentPreset);
+    presetMenu->addSeparator();
+    QAction *importPresetAction = presetMenu->addAction(tr("Preset &importieren …"), this,
+                                                        &MainWindow::importPreset);
+    QAction *exportPresetAction = presetMenu->addAction(tr("Preset &exportieren …"), this,
+                                                        &MainWindow::exportPreset);
+    presetMenu->addSeparator();
+    presetMenu->addAction(tr("Preset-&Ordner öffnen"), this, [this] {
+        QDir().mkpath(m_presets.directory());
+        QDesktopServices::openUrl(QUrl::fromLocalFile(m_presets.directory()));
+    });
+
     QMenu *helpMenu = menuBar()->addMenu(tr("&Hilfe"));
     helpMenu->addAction(tr("pandoc-&Handbuch (online)"), this, [] {
         QDesktopServices::openUrl(QUrl(QStringLiteral("https://pandoc.org/MANUAL.html")));
@@ -345,7 +393,9 @@ void MainWindow::setupMenus()
     helpMenu->addAction(tr("Ü&ber PandocUi"), this, &MainWindow::showAbout);
     helpMenu->addAction(tr("Über &Qt"), qApp, &QApplication::aboutQt);
 
-    m_busyDisabledActions = {openAction, convertAction, pandocAction};
+    m_busyDisabledActions = {openAction,         convertAction,      pandocAction,
+                             savePresetAction,   deletePresetAction, importPresetAction,
+                             exportPresetAction};
 }
 
 // ---------------------------------------------------------------------------
@@ -362,6 +412,7 @@ void MainWindow::loadSettings()
                                      QStringList{QStringLiteral("html"), QStringLiteral("docx")})
                           .toStringList();
     m_selectedOrder.removeDuplicates();
+    m_currentPresetName = settings.value(QStringLiteral("currentPreset")).toString();
 
     settings.beginGroup(QStringLiteral("options"));
     const QStringList keys = settings.childKeys();
@@ -391,6 +442,7 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("useInputDir"), m_sameDirCheck->isChecked());
     settings.setValue(QStringLiteral("openFolderAfter"), m_openFolderCheck->isChecked());
     settings.setValue(QStringLiteral("selectedFormats"), m_selectedOrder);
+    settings.setValue(QStringLiteral("currentPreset"), m_currentPresetName);
     settings.setValue(QStringLiteral("geometry"), saveGeometry());
     settings.setValue(QStringLiteral("mainSplitter"), m_mainSplitter->saveState());
     settings.setValue(QStringLiteral("formatSplitter"), m_formatSplitter->saveState());
@@ -731,6 +783,200 @@ void MainWindow::removeOptionsTab(const QString &format)
     widget->deleteLater();
     if (m_optionTabs->count() == 0)
         m_optionsStack->setCurrentIndex(0);
+}
+
+// ---------------------------------------------------------------------------
+// Presets
+// ---------------------------------------------------------------------------
+
+Preset MainWindow::currentPreset(const QString &name) const
+{
+    Preset preset;
+    preset.name = name.isEmpty() ? m_currentPresetName : name;
+    preset.formats = m_selectedOrder;
+    for (const QString &format : m_selectedOrder) {
+        const FormatOptionsWidget *widget = m_optionWidgets.value(format);
+        const QVariantMap values = widget ? widget->values() : m_savedOptions.value(format);
+        preset.options.insert(format, PandocFormats::nonDefaultValues(format, values));
+    }
+    return preset;
+}
+
+QStringList MainWindow::applyPreset(const Preset &preset)
+{
+    QStringList available;
+    QStringList missing;
+    for (const QString &format : preset.formats)
+        (m_outputFormats.contains(format) ? available : missing) << format;
+
+    // Optionen vorab hinterlegen, damit neu angelegte Reiter sie übernehmen …
+    for (const QString &format : std::as_const(available))
+        m_savedOptions.insert(format, preset.options.value(format));
+    setSelectedOutputFormats(available);
+    // … und in bereits vorhandenen Reitern setzen (fehlende Werte = Standard).
+    for (const QString &format : std::as_const(available)) {
+        if (FormatOptionsWidget *widget = m_optionWidgets.value(format))
+            widget->setValues(preset.options.value(format));
+    }
+
+    m_currentPresetName = preset.name;
+    refreshPresetList();
+    updateState();
+    return missing;
+}
+
+bool MainWindow::loadPreset(const QString &name)
+{
+    QString error;
+    const std::optional<Preset> preset = m_presets.load(name, &error);
+    if (!preset) {
+        appendLog(tr("Preset „%1“ konnte nicht geladen werden: %2").arg(name, error), LogLevel::Error);
+        QMessageBox::warning(this, tr("Preset laden"),
+                             tr("Das Preset „%1“ konnte nicht geladen werden:\n%2").arg(name, error));
+        refreshPresetList();
+        return false;
+    }
+
+    const QStringList missing = applyPreset(*preset);
+    appendLog(tr("Preset „%1“ geladen: %2").arg(name, preset->formats.join(QStringLiteral(", "))));
+    if (!missing.isEmpty()) {
+        appendLog(tr("Von dieser pandoc-Version nicht unterstützt und übersprungen: %1")
+                      .arg(missing.join(QStringLiteral(", "))),
+                  LogLevel::Warning);
+    }
+    statusBar()->showMessage(tr("Preset „%1“ geladen").arg(name), 5000);
+    return true;
+}
+
+void MainWindow::refreshPresetList()
+{
+    const QStringList names = m_presets.names();
+    if (!names.contains(m_currentPresetName))
+        m_currentPresetName.clear();
+
+    const QSignalBlocker blocker(m_presetCombo);
+    m_presetCombo->clear();
+    m_presetCombo->addItem(names.isEmpty() ? tr("(keine Presets gespeichert)")
+                                           : tr("(Preset wählen)"),
+                           QString());
+    for (const QString &name : names)
+        m_presetCombo->addItem(name, name);
+    const int index = m_presetCombo->findData(m_currentPresetName);
+    m_presetCombo->setCurrentIndex(index < 0 ? 0 : index);
+    m_presetDeleteButton->setEnabled(!m_currentPresetName.isEmpty());
+}
+
+void MainWindow::savePresetAs()
+{
+    if (m_selectedOrder.isEmpty()) {
+        QMessageBox::information(this, tr("Preset speichern"),
+                                 tr("Bitte zuerst mindestens ein Ausgabeformat auswählen."));
+        return;
+    }
+
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        this, tr("Preset speichern"),
+        tr("Name des Presets für %1:").arg(m_selectedOrder.join(QStringLiteral(", "))),
+        QLineEdit::Normal, m_currentPresetName, &ok).trimmed();
+    if (!ok || name.isEmpty())
+        return;
+
+    if (m_presets.contains(name)
+        && QMessageBox::question(this, tr("Preset überschreiben?"),
+                                 tr("Ein Preset „%1“ existiert bereits. Überschreiben?").arg(name))
+               != QMessageBox::Yes) {
+        return;
+    }
+
+    QString error;
+    if (!m_presets.save(currentPreset(name), &error)) {
+        QMessageBox::critical(this, tr("Preset speichern"),
+                              tr("Das Preset konnte nicht gespeichert werden:\n%1").arg(error));
+        return;
+    }
+    m_currentPresetName = name;
+    refreshPresetList();
+    appendLog(tr("Preset „%1“ gespeichert.").arg(name), LogLevel::Success);
+    statusBar()->showMessage(tr("Preset „%1“ gespeichert").arg(name), 5000);
+}
+
+void MainWindow::deleteCurrentPreset()
+{
+    const QString name = m_presetCombo->currentData().toString();
+    if (name.isEmpty())
+        return;
+    if (QMessageBox::question(this, tr("Preset löschen"),
+                              tr("Das Preset „%1“ wirklich löschen?").arg(name))
+        != QMessageBox::Yes) {
+        return;
+    }
+    QString error;
+    if (!m_presets.remove(name, &error)) {
+        QMessageBox::critical(this, tr("Preset löschen"),
+                              tr("Das Preset konnte nicht gelöscht werden:\n%1").arg(error));
+        return;
+    }
+    m_currentPresetName.clear();
+    refreshPresetList();
+    appendLog(tr("Preset „%1“ gelöscht.").arg(name));
+}
+
+void MainWindow::importPreset()
+{
+    const QString file = QFileDialog::getOpenFileName(this, tr("Preset importieren"),
+                                                      m_lastInputDir,
+                                                      tr("PandocUi-Presets (*.json);;Alle Dateien (*)"));
+    if (file.isEmpty())
+        return;
+
+    QString error;
+    std::optional<Preset> preset = PresetStore::importFromFile(file, &error);
+    if (!preset) {
+        QMessageBox::warning(this, tr("Preset importieren"),
+                             tr("Die Datei konnte nicht importiert werden:\n%1").arg(error));
+        return;
+    }
+    if (m_presets.contains(preset->name)
+        && QMessageBox::question(this, tr("Preset überschreiben?"),
+                                 tr("Ein Preset „%1“ existiert bereits. Überschreiben?")
+                                     .arg(preset->name))
+               != QMessageBox::Yes) {
+        return;
+    }
+    if (!m_presets.save(*preset, &error)) {
+        QMessageBox::critical(this, tr("Preset importieren"),
+                              tr("Das Preset konnte nicht gespeichert werden:\n%1").arg(error));
+        return;
+    }
+    loadPreset(preset->name);
+}
+
+void MainWindow::exportPreset()
+{
+    if (m_selectedOrder.isEmpty()) {
+        QMessageBox::information(this, tr("Preset exportieren"),
+                                 tr("Bitte zuerst mindestens ein Ausgabeformat auswählen."));
+        return;
+    }
+    const QString name = m_currentPresetName.isEmpty() ? tr("preset") : m_currentPresetName;
+    QString suggested = name;
+    for (const QChar c : QStringLiteral("\\/:*?\"<>|"))
+        suggested.replace(c, QLatin1Char('_'));
+    const QString file = QFileDialog::getSaveFileName(
+        this, tr("Preset exportieren"),
+        QDir(m_lastInputDir).filePath(suggested + QStringLiteral(".json")),
+        tr("PandocUi-Presets (*.json)"));
+    if (file.isEmpty())
+        return;
+
+    QString error;
+    if (!PresetStore::exportToFile(currentPreset(name), file, &error)) {
+        QMessageBox::critical(this, tr("Preset exportieren"),
+                              tr("Die Datei konnte nicht geschrieben werden:\n%1").arg(error));
+        return;
+    }
+    appendLog(tr("Preset exportiert: %1").arg(native(file)), LogLevel::Success);
 }
 
 // ---------------------------------------------------------------------------

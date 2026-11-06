@@ -83,4 +83,7 @@ inline const char *extraArgumentsKey() { return "extra-args"; }
 // Nicht enthaltene Werte werden durch den Standardwert ersetzt.
 QStringList optionArguments(const QString &outputFormat, const QVariantMap &values);
 
+// Nur die Werte, die vom Standard abweichen (für kompakte Presets).
+QVariantMap nonDefaultValues(const QString &outputFormat, const QVariantMap &values);
+
 } // namespace PandocFormats

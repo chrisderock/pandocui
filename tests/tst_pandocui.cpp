@@ -3,6 +3,7 @@
 #include "mainwindow.h"
 #include "pandocformats.h"
 #include "pandocinfo.h"
+#include "presetstore.h"
 
 #include <QCheckBox>
 #include <QFile>
@@ -36,6 +37,10 @@ private slots:
 
     void mainWindowBuildsJobs();
     void addPdfToExistingSelection();
+    void presetStoreRoundTrip();
+    void presetJsonErrors();
+    void mainWindowPresets();
+
     void endToEndConversion();
 
 private:
@@ -49,6 +54,8 @@ void TestPandocUi::initTestCase()
     QCoreApplication::setOrganizationName(QStringLiteral("PandocUiTest"));
     QCoreApplication::setApplicationName(QStringLiteral("PandocUiTest"));
     QSettings().clear();
+    QStandardPaths::setTestModeEnabled(true);
+    QDir(PresetStore::defaultDirectory()).removeRecursively();
     QVERIFY(m_tmp.isValid());
     m_sample = QStringLiteral(PANDOCUI_TEST_DATA "/beispiel.md");
     QVERIFY(QFile::exists(m_sample));
@@ -236,6 +243,8 @@ void TestPandocUi::mainWindowBuildsJobs()
             v.insert("V:papersize", "a4");
             w->setValues(v);
         }
+        window.presetStore().save(window.currentPreset("Bericht A4"));
+        window.loadPreset("Bericht A4");
         window.resize(1180, 860);
         window.show();
         QVERIFY(QTest::qWaitForWindowExposed(&window));
@@ -277,6 +286,86 @@ void TestPandocUi::addPdfToExistingSelection()
     QVERIFY2(minAfter.height() <= minBefore.height() && minAfter.width() <= minBefore.width(),
              qPrintable(QStringLiteral("%1x%2 -> %3x%4").arg(minBefore.width()).arg(minBefore.height())
                             .arg(minAfter.width()).arg(minAfter.height())));
+}
+
+void TestPandocUi::presetStoreRoundTrip()
+{
+    PresetStore store(m_tmp.filePath("presets"));
+    QVERIFY(store.names().isEmpty());
+
+    Preset preset;
+    preset.name = "Bericht: A4/PDF ?*";
+    preset.formats = {"pdf", "html"};
+    preset.options["pdf"] = QVariantMap{{"--toc", true}, {"--toc-depth", 2},
+                                        {"V:papersize", "a4"}, {extraArgumentsKey(), "--dpi=300"}};
+    preset.options["html"] = QVariantMap{{"--embed-resources", true}};
+
+    QString error;
+    QVERIFY2(store.save(preset, &error), qPrintable(error));
+    QCOMPARE(store.names(), QStringList{preset.name});
+    QVERIFY(store.contains(preset.name));
+
+    const std::optional<Preset> loaded = store.load(preset.name, &error);
+    QVERIFY2(loaded, qPrintable(error));
+    QCOMPARE(loaded->name, preset.name);
+    QCOMPARE(loaded->formats, preset.formats);
+    // Die erzeugten pandoc-Argumente müssen identisch sein (JSON speichert Zahlen als double)
+    for (const QString &format : std::as_const(preset.formats)) {
+        QCOMPARE(PandocFormats::optionArguments(format, loaded->options.value(format)),
+                 PandocFormats::optionArguments(format, preset.options.value(format)));
+    }
+
+    QVERIFY(store.remove(preset.name, &error));
+    QVERIFY(store.names().isEmpty());
+    QVERIFY(!store.save(Preset{}, &error)); // ohne Namen
+}
+
+void TestPandocUi::presetJsonErrors()
+{
+    QString error;
+    QVERIFY(!PresetStore::fromJson("kein json", &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(!PresetStore::fromJson("{\"name\": \"x\"}", &error));
+    QVERIFY(!PresetStore::fromJson("{\"pandocui-preset\": 99}", &error));
+
+    const auto preset = PresetStore::fromJson(
+        "{\"pandocui-preset\": 1, \"formats\": [\"gfm\", \"gfm\", 3], \"options\": {}}", &error);
+    QVERIFY(preset);
+    QCOMPARE(preset->formats, QStringList{"gfm"});
+    QVERIFY(preset->options.value("gfm").isEmpty());
+}
+
+void TestPandocUi::mainWindowPresets()
+{
+    MainWindow window;
+    window.setSelectedOutputFormats({"html", "pdf"});
+    const QVariantMap pdf{{"--toc", true}, {"--pdf-engine", "xelatex"}, {"V:geometry", "margin=2cm"}};
+    window.optionsWidget("pdf")->setValues(pdf);
+
+    // Presets enthalten nur vom Standard abweichende Werte
+    const Preset current = window.currentPreset("PDF und HTML");
+    QCOMPARE(current.options.value("pdf"), pdf);
+    QVERIFY(current.options.value("html").isEmpty());
+
+    QString error;
+    QVERIFY2(window.presetStore().save(current, &error), qPrintable(error));
+
+    // Auswahl und Optionen ändern, dann Preset laden
+    window.optionsWidget("pdf")->resetToDefaults();
+    window.setSelectedOutputFormats({"docx"});
+    QVERIFY(window.loadPreset("PDF und HTML"));
+    QCOMPARE(window.selectedOutputFormats(), (QStringList{"html", "pdf"}));
+    QCOMPARE(window.currentPresetName(), QStringLiteral("PDF und HTML"));
+    QVERIFY(!window.optionsWidget("docx"));
+    QCOMPARE(PandocFormats::optionArguments("pdf", window.optionsWidget("pdf")->values()),
+             PandocFormats::optionArguments("pdf", pdf));
+
+    // Nicht vorhandene Formate werden übersprungen und gemeldet
+    Preset foreign;
+    foreign.name = "Fremd";
+    foreign.formats = {"gibtsnicht", "gfm"};
+    QCOMPARE(window.applyPreset(foreign), QStringList{"gibtsnicht"});
+    QCOMPARE(window.selectedOutputFormats(), QStringList{"gfm"});
 }
 
 void TestPandocUi::endToEndConversion()

@@ -21,6 +21,36 @@ Grafische Oberfläche für [pandoc](https://pandoc.org), erstellt mit Qt 6 (Widg
 
 Auswahl, Ordner und Optionen werden beim Beenden gespeichert (`QSettings`).
 
+## Presets
+
+Ein Preset speichert die gewählten Ausgabeformate (in ihrer Reihenfolge) samt aller
+Optionen; Eingabedatei und Ausgabeordner gehören nicht dazu.
+
+- **Speichern:** Diskettensymbol neben der Preset-Auswahl oder *Presets → Als Preset speichern …* (Strg+S)
+- **Laden:** Preset in der Auswahlliste über den Formaten anklicken
+- **Löschen:** Papierkorbsymbol oder *Presets → Preset löschen*
+- **Weitergeben:** *Presets → Preset exportieren … / importieren …* (JSON-Datei)
+
+Presets liegen als JSON-Dateien im Anwendungsdatenordner (*Presets → Preset-Ordner öffnen*),
+unter Windows z. B. `%APPDATA%\PandocUi\PandocUi\presets`, unter Linux
+`~/.local/share/PandocUi/PandocUi/presets`. Gespeichert werden nur Werte, die vom Standard
+abweichen – die Dateien lassen sich daher auch gut von Hand bearbeiten:
+
+```json
+{
+    "pandocui-preset": 1,
+    "name": "Bericht A4",
+    "formats": ["pdf", "docx"],
+    "options": {
+        "pdf":  { "--pdf-engine": "xelatex", "--toc": true, "V:papersize": "a4" },
+        "docx": { "--reference-doc": "C:\\Vorlagen\\firma.docx" }
+    }
+}
+```
+
+Formate, die die installierte pandoc-Version nicht kennt, werden beim Laden übersprungen
+und im Protokoll gemeldet.
+
 ## Voraussetzungen
 
 - Qt ≥ 6.5 (Modul Widgets, für die Tests zusätzlich Test)
@@ -85,6 +115,7 @@ zusätzlich tatsächlich nach HTML, DOCX, GFM, ODT und – falls `pdflatex` vorh
 | `src/pandocformats.*` | Formaterkennung, Dateiendungen, Beschreibungen, Optionsdefinitionen je Format, Argumentaufbau |
 | `src/pandocinfo.*` | pandoc finden, Version und Formatlisten abfragen |
 | `src/formatoptionswidget.*` | Aus den Optionsdefinitionen erzeugte Eingabemaske je Format |
+| `src/presetstore.*` | Speichern, Laden, Import und Export von Presets (JSON) |
 | `src/conversionrunner.*` | Führt die pandoc-Aufrufe nacheinander per `QProcess` aus |
 | `src/mainwindow.*` | Hauptfenster mit den fünf Schritten |
 | `tests/` | QtTest-Tests und Beispieldokument |

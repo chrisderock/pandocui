@@ -735,4 +735,37 @@ QStringList optionArguments(const QString &outputFormat, const QVariantMap &valu
     return args;
 }
 
+QVariantMap nonDefaultValues(const QString &outputFormat, const QVariantMap &values)
+{
+    QVariantMap result;
+    const QList<OptionGroup> groups = optionGroups(outputFormat);
+    for (const OptionGroup &group : groups) {
+        for (const OptionDef &opt : group.options) {
+            if (!values.contains(opt.id))
+                continue;
+            const QVariant value = values.value(opt.id);
+            bool isDefault = false;
+            switch (opt.type) {
+            case OptionDef::Type::Bool:
+                isDefault = value.toBool() == opt.defaultValue.toBool();
+                break;
+            case OptionDef::Type::Int:
+                isDefault = value.toInt() == opt.defaultValue.toInt();
+                break;
+            case OptionDef::Type::Choice:
+            case OptionDef::Type::Text:
+            case OptionDef::Type::File:
+                isDefault = value.toString().trimmed() == opt.defaultValue.toString();
+                break;
+            }
+            if (!isDefault)
+                result.insert(opt.id, value);
+        }
+    }
+    const QString extraKey = QLatin1String(extraArgumentsKey());
+    if (!values.value(extraKey).toString().trimmed().isEmpty())
+        result.insert(extraKey, values.value(extraKey));
+    return result;
+}
+
 } // namespace PandocFormats
