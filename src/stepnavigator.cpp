@@ -177,9 +177,23 @@ bool StepNavigator::eventFilter(QObject *watched, QEvent *event)
 
 void StepNavigator::changeEvent(QEvent *event)
 {
-    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::EnabledChange) {
+    QWidget::changeEvent(event);
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::EnabledChange)
+        scheduleRestyle();
+}
+
+void StepNavigator::scheduleRestyle()
+{
+    // Palettenänderungen kommen u. a. während Qt die Widgets "poliert" (z. B. beim
+    // ersten Anzeigen mit dem Windows-11-Stil). Stylesheets dürfen dann nicht sofort
+    // gesetzt werden – das führte unter Windows zu einer Heap-Beschädigung. Daher
+    // erst nach Rückkehr in die Ereignisschleife und zusammengefasst aktualisieren.
+    if (m_restylePending)
+        return;
+    m_restylePending = true;
+    QMetaObject::invokeMethod(this, [this] {
+        m_restylePending = false;
         for (int i = 0; i < m_steps.size(); ++i)
             updateStyle(i);
-    }
-    QWidget::changeEvent(event);
+    }, Qt::QueuedConnection);
 }

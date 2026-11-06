@@ -46,7 +46,9 @@ private:
 
     void updateStyle(int index);
     void updateSummaryText(int index);
+    void scheduleRestyle();
 
     QList<Step> m_steps;
     int m_current = 0;
+    bool m_restylePending = false;
 };
