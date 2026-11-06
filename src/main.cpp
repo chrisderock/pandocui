@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QTimer>
 
 namespace {
 
@@ -53,6 +54,9 @@ int main(int argc, char *argv[])
     const QStringList files = parser.positionalArguments();
     if (!files.isEmpty())
         window.openInputFile(files.first());
+
+    // Erst nach dem Anzeigen des Fensters prüfen, damit der Dialog darüber erscheint
+    QTimer::singleShot(0, &window, &MainWindow::checkPandocAtStartup);
 
     return app.exec();
 }

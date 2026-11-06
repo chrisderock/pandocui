@@ -37,6 +37,7 @@ set(PANDOCUI_CORE_SOURCES
     src/presetstore.h          src/presetstore.cpp
     src/translation.h          src/translation.cpp
     src/stepnavigator.h        src/stepnavigator.cpp
+    src/pandocmissingdialog.h  src/pandocmissingdialog.cpp
     src/mainwindow.h           src/mainwindow.cpp
 )
 qt_add_library(pandocui_core STATIC ${PANDOCUI_CORE_SOURCES})

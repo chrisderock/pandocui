@@ -22,4 +22,23 @@ QString findExecutable(const QString &configuredPath = {});
 // Startet pandoc synchron und liest Version und Formatlisten aus.
 Info query(const QString &executable);
 
+// Hinweise zur Installation von pandoc für ein bestimmtes System.
+struct InstallHint
+{
+    QString systemName;   // z. B. "Windows", "macOS", "Debian/Ubuntu"
+    QStringList commands; // Befehle für das Terminal (leer, wenn keine bekannt)
+    QString note;         // ergänzender Hinweis
+};
+
+// Ermittelt die Hinweise anhand von QSysInfo::productType() und – unter Linux –
+// ID_LIKE aus /etc/os-release (für abgeleitete Distributionen wie Linux Mint).
+InstallHint installHint(const QString &productType, const QStringList &idLike = {});
+InstallHint installHintForThisSystem();
+
+// Einträge von ID_LIKE aus /etc/os-release (leer außerhalb von Linux).
+QStringList osReleaseIdLike();
+
+// Offizielle Installationsseite von pandoc.
+QString installUrl();
+
 } // namespace Pandoc

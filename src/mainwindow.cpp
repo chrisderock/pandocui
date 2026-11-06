@@ -2,6 +2,7 @@
 
 #include "formatoptionswidget.h"
 #include "pandocformats.h"
+#include "pandocmissingdialog.h"
 #include "stepnavigator.h"
 #include "translation.h"
 
@@ -123,6 +124,8 @@ void MainWindow::setupUi()
     connect(m_pandocBanner, &QLabel::linkActivated, this, [this](const QString &link) {
         if (link.startsWith(QLatin1String("http")))
             QDesktopServices::openUrl(QUrl(link));
+        else if (link == QLatin1String("#help"))
+            showPandocMissingDialog();
         else
             choosePandocExecutable();
     });
@@ -581,8 +584,8 @@ void MainWindow::loadPandoc()
     } else {
         m_pandocPath.clear();
         m_pandocBanner->setText(
-            tr("<b>pandoc wurde nicht gefunden.</b> Bitte pandoc installieren "
-               "(<a href=\"https://pandoc.org/installing.html\">pandoc.org</a>) oder das "
+            tr("<b>pandoc wurde nicht gefunden.</b> "
+               "<a href=\"#help\">Installationshinweise anzeigen</a> oder das "
                "<a href=\"#choose\">pandoc-Programm manuell auswählen</a>.<br>%1")
                 .arg(m_pandocInfo.error.toHtmlEscaped()));
         m_pandocBanner->setVisible(true);
@@ -1522,6 +1525,37 @@ void MainWindow::appendLog(const QString &text, LogLevel level)
 // ---------------------------------------------------------------------------
 // Sonstiges
 // ---------------------------------------------------------------------------
+
+void MainWindow::checkPandocAtStartup()
+{
+    if (!m_pandocInfo.ok)
+        showPandocMissingDialog();
+}
+
+void MainWindow::showPandocMissingDialog()
+{
+    PandocMissingDialog dialog(Pandoc::installHintForThisSystem(), this);
+    dialog.setDetails(m_pandocInfo.error);
+
+    auto finishIfFound = [this, &dialog] {
+        if (m_pandocInfo.ok) {
+            appendLog(tr("pandoc ist jetzt verfügbar."), LogLevel::Success);
+            dialog.accept();
+        } else {
+            dialog.setDetails(m_pandocInfo.error);
+            dialog.setStatus(tr("pandoc wurde weiterhin nicht gefunden."));
+        }
+    };
+    connect(&dialog, &PandocMissingDialog::recheckRequested, this, [this, finishIfFound] {
+        loadPandoc();
+        finishIfFound();
+    });
+    connect(&dialog, &PandocMissingDialog::chooseExecutableRequested, this, [this, finishIfFound] {
+        choosePandocExecutable();
+        finishIfFound();
+    });
+    dialog.exec();
+}
 
 void MainWindow::choosePandocExecutable()
 {

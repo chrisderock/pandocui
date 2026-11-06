@@ -3,6 +3,7 @@
 #include "mainwindow.h"
 #include "pandocformats.h"
 #include "pandocinfo.h"
+#include "pandocmissingdialog.h"
 #include "presetstore.h"
 #include "translation.h"
 
@@ -12,6 +13,7 @@
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QPushButton>
 #include <QTreeWidget>
 #include <QtTest>
 
@@ -42,6 +44,10 @@ private slots:
     void presetStoreRoundTrip();
     void presetJsonErrors();
     void mainWindowPresets();
+
+    void installHints_data();
+    void installHints();
+    void pandocMissingDialog();
 
     void languageResolution();
     void englishTranslation();
@@ -408,6 +414,75 @@ void TestPandocUi::mainWindowPresets()
     foreign.formats = {"gibtsnicht", "gfm"};
     QCOMPARE(window.applyPreset(foreign), QStringList{"gibtsnicht"});
     QCOMPARE(window.selectedOutputFormats(), QStringList{"gfm"});
+}
+
+void TestPandocUi::installHints_data()
+{
+    QTest::addColumn<QString>("productType");
+    QTest::addColumn<QStringList>("idLike");
+    QTest::addColumn<QString>("commandPart");
+
+    QTest::newRow("Windows") << "windows" << QStringList{} << "winget install";
+    QTest::newRow("macOS") << "macos" << QStringList{} << "brew install pandoc";
+    QTest::newRow("Debian") << "debian" << QStringList{} << "apt install pandoc";
+    QTest::newRow("Ubuntu") << "ubuntu" << QStringList{"debian"} << "apt install pandoc";
+    QTest::newRow("Linux Mint") << "linuxmint" << QStringList{"ubuntu", "debian"} << "apt install pandoc";
+    QTest::newRow("Fedora") << "fedora" << QStringList{} << "dnf install pandoc";
+    QTest::newRow("Rocky") << "rocky" << QStringList{"rhel", "centos", "fedora"} << "epel-release";
+    QTest::newRow("AlmaLinux") << "almalinux" << QStringList{"rhel", "centos", "fedora"} << "epel-release";
+    QTest::newRow("openSUSE") << "opensuse-tumbleweed" << QStringList{"opensuse", "suse"} << "zypper";
+    QTest::newRow("Arch") << "arch" << QStringList{} << "pacman -S pandoc";
+    QTest::newRow("EndeavourOS") << "endeavouros" << QStringList{"arch"} << "pacman -S pandoc";
+    QTest::newRow("unbekannt") << "gentoo" << QStringList{} << "";
+}
+
+void TestPandocUi::installHints()
+{
+    QFETCH(QString, productType);
+    QFETCH(QStringList, idLike);
+    QFETCH(QString, commandPart);
+
+    const Pandoc::InstallHint hint = Pandoc::installHint(productType, idLike);
+    QVERIFY(!hint.systemName.isEmpty());
+    QVERIFY(!hint.note.isEmpty());
+    const QString commands = hint.commands.join(QLatin1Char('\n'));
+    if (commandPart.isEmpty())
+        QVERIFY(hint.commands.isEmpty());
+    else
+        QVERIFY2(commands.contains(commandPart), qPrintable(commands));
+    // Fedora braucht kein EPEL
+    if (productType == QLatin1String("fedora"))
+        QVERIFY(!commands.contains("epel"));
+}
+
+void TestPandocUi::pandocMissingDialog()
+{
+    const Pandoc::InstallHint hint = Pandoc::installHint("rocky", {"rhel", "fedora"});
+    PandocMissingDialog dialog(hint);
+    QCOMPARE(dialog.commandText(), hint.commands.join(QLatin1Char('\n')));
+    QCOMPARE(dialog.commandText().count(QLatin1Char('\n')), 1); // zwei Befehle
+
+    QSignalSpy recheck(&dialog, &PandocMissingDialog::recheckRequested);
+    const QList<QPushButton *> buttons = dialog.findChildren<QPushButton *>();
+    for (QPushButton *button : buttons) {
+        if (button->text() == QCoreApplication::translate("PandocMissingDialog", "Erneut prüfen"))
+            button->click();
+    }
+    QCOMPARE(recheck.count(), 1);
+
+    // Ohne bekannte Befehle gibt es kein Befehlsfeld
+    PandocMissingDialog generic(Pandoc::installHint("gentoo"));
+    QVERIFY(generic.commandText().isEmpty());
+
+    const QString shot = qEnvironmentVariable("PANDOCUI_SCREENSHOT");
+    if (!shot.isEmpty()) {
+        PandocMissingDialog debian(Pandoc::installHint("debian"));
+        debian.setDetails(QCoreApplication::translate("Pandoc", "Das Programm pandoc wurde nicht gefunden."));
+        debian.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&debian));
+        QTest::qWait(100);
+        QVERIFY(debian.grab().save(QString(shot).replace(".png", "_pandoc_missing.png")));
+    }
 }
 
 void TestPandocUi::languageResolution()

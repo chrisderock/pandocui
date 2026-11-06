@@ -222,10 +222,6 @@
         <translation>%1 found: %2</translation>
     </message>
     <message>
-        <source>&lt;b&gt;pandoc wurde nicht gefunden.&lt;/b&gt; Bitte pandoc installieren (&lt;a href=&quot;https://pandoc.org/installing.html&quot;&gt;pandoc.org&lt;/a&gt;) oder das &lt;a href=&quot;#choose&quot;&gt;pandoc-Programm manuell auswählen&lt;/a&gt;.&lt;br&gt;%1</source>
-        <translation>&lt;b&gt;pandoc was not found.&lt;/b&gt; Please install pandoc (&lt;a href=&quot;https://pandoc.org/installing.html&quot;&gt;pandoc.org&lt;/a&gt;) or &lt;a href=&quot;#choose&quot;&gt;choose the pandoc executable manually&lt;/a&gt;.&lt;br&gt;%1</translation>
-    </message>
-    <message>
         <source>pandoc nicht gefunden</source>
         <translation>pandoc not found</translation>
     </message>
@@ -679,6 +675,18 @@ Each format gets its own tab with options here.</translation>
         <source>%1 von %2 Dateien erzeugt</source>
         <translation>%1 of %2 files generated</translation>
     </message>
+    <message>
+        <source>&lt;b&gt;pandoc wurde nicht gefunden.&lt;/b&gt; &lt;a href=&quot;#help&quot;&gt;Installationshinweise anzeigen&lt;/a&gt; oder das &lt;a href=&quot;#choose&quot;&gt;pandoc-Programm manuell auswählen&lt;/a&gt;.&lt;br&gt;%1</source>
+        <translation>&lt;b&gt;pandoc was not found.&lt;/b&gt; &lt;a href=&quot;#help&quot;&gt;Show installation instructions&lt;/a&gt; or &lt;a href=&quot;#choose&quot;&gt;choose the pandoc executable manually&lt;/a&gt;.&lt;br&gt;%1</translation>
+    </message>
+    <message>
+        <source>pandoc ist jetzt verfügbar.</source>
+        <translation>pandoc is now available.</translation>
+    </message>
+    <message>
+        <source>pandoc wurde weiterhin nicht gefunden.</source>
+        <translation>pandoc was still not found.</translation>
+    </message>
 </context>
 <context>
     <name>Pandoc</name>
@@ -693,6 +701,26 @@ Each format gets its own tab with options here.</translation>
     <message>
         <source>pandoc konnte nicht ausgeführt werden.</source>
         <translation>pandoc could not be run.</translation>
+    </message>
+    <message>
+        <source>Nach der Installation „Erneut prüfen“ wählen.</source>
+        <translation>After installing, choose “Check again”.</translation>
+    </message>
+    <message>
+        <source>Alternativ das Installationsprogramm (.msi) von pandoc.org herunterladen und ausführen.</source>
+        <translation>Alternatively, download and run the installer (.msi) from pandoc.org.</translation>
+    </message>
+    <message>
+        <source>Der Befehl setzt Homebrew (brew.sh) voraus. Alternativ das Installationspaket (.pkg) von pandoc.org verwenden.</source>
+        <translation>The command requires Homebrew (brew.sh). Alternatively, use the installer package (.pkg) from pandoc.org.</translation>
+    </message>
+    <message>
+        <source>pandoc stammt bei diesen Systemen aus dem EPEL-Repository.</source>
+        <translation>On these systems, pandoc comes from the EPEL repository.</translation>
+    </message>
+    <message>
+        <source>pandoc lässt sich meist über die Paketverwaltung des Systems installieren; vorgefertigte Pakete gibt es auf pandoc.org.</source>
+        <translation>pandoc can usually be installed with the system&apos;s package manager; prebuilt packages are available on pandoc.org.</translation>
     </message>
 </context>
 <context>
@@ -1468,6 +1496,57 @@ Each format gets its own tab with options here.</translation>
     <message>
         <source>Lua-Skripte (*.lua);;Alle Dateien (*)</source>
         <translation>Lua scripts (*.lua);;All files (*)</translation>
+    </message>
+</context>
+<context>
+    <name>PandocMissingDialog</name>
+    <message>
+        <source>pandoc nicht gefunden</source>
+        <translation>pandoc not found</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;PandocUi benötigt das Programm pandoc, um Dokumente umzuwandeln.&lt;/b&gt;&lt;br&gt;Es wurde auf diesem System nicht gefunden.</source>
+        <translation>&lt;b&gt;PandocUi needs the pandoc program to convert documents.&lt;/b&gt;&lt;br&gt;It was not found on this system.</translation>
+    </message>
+    <message>
+        <source>Erkanntes System: %1 (%2)</source>
+        <translation>Detected system: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Installation im Terminal:</source>
+        <translation>Install from a terminal:</translation>
+    </message>
+    <message>
+        <source>Kopieren</source>
+        <translation>Copy</translation>
+    </message>
+    <message>
+        <source>Befehle in die Zwischenablage kopieren</source>
+        <translation>Copy the commands to the clipboard</translation>
+    </message>
+    <message>
+        <source>Kopiert ✓</source>
+        <translation>Copied ✓</translation>
+    </message>
+    <message>
+        <source>Weitere Installationswege: &lt;a href=&quot;%1&quot;&gt;%1&lt;/a&gt;</source>
+        <translation>Other ways to install: &lt;a href=&quot;%1&quot;&gt;%1&lt;/a&gt;</translation>
+    </message>
+    <message>
+        <source>Erneut prüfen</source>
+        <translation>Check again</translation>
+    </message>
+    <message>
+        <source>pandoc auswählen …</source>
+        <translation>Choose pandoc …</translation>
+    </message>
+    <message>
+        <source>Installationsseite öffnen</source>
+        <translation>Open installation page</translation>
+    </message>
+    <message>
+        <source>Details: %1</source>
+        <translation>Details: %1</translation>
     </message>
 </context>
 <context>

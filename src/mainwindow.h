@@ -64,6 +64,10 @@ public:
     QList<ConversionJob> buildJobs() const;
     QString pandocExecutable() const { return m_pandocPath; }
 
+    // Beim Start aufrufen: zeigt Installationshinweise, falls pandoc fehlt.
+    void checkPandocAtStartup();
+    void showPandocMissingDialog();
+
     // Presets: Ausgabeformate samt Optionen
     Preset currentPreset(const QString &name = {}) const;
     // Übernimmt Formate und Optionen; liefert die nicht verfügbaren Formate zurück.
