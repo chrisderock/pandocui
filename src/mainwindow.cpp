@@ -92,7 +92,16 @@ MainWindow::MainWindow(QWidget *parent)
     updateState();
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow()
+{
+    // Erst im Destruktor von QWidget wird das Fenster geschlossen. Dabei verliert z. B.
+    // das Eingabefeld den Fokus und sendet editingFinished – zu diesem Zeitpunkt sind
+    // die Mitglieder von MainWindow aber schon zerstört (unter Windows: Heap-Beschädigung).
+    // Deshalb alle Verbindungen der eigenen Widgets zu diesem Fenster vorher trennen.
+    const QList<QObject *> children = findChildren<QObject *>();
+    for (QObject *child : children)
+        QObject::disconnect(child, nullptr, this, nullptr);
+}
 
 // ---------------------------------------------------------------------------
 // Aufbau der Oberfläche

@@ -185,9 +185,8 @@ void StepNavigator::changeEvent(QEvent *event)
 void StepNavigator::scheduleRestyle()
 {
     // Palettenänderungen kommen u. a. während Qt die Widgets "poliert" (z. B. beim
-    // ersten Anzeigen mit dem Windows-11-Stil). Stylesheets dürfen dann nicht sofort
-    // gesetzt werden – das führte unter Windows zu einer Heap-Beschädigung. Daher
-    // erst nach Rückkehr in die Ereignisschleife und zusammengefasst aktualisieren.
+    // ersten Anzeigen). Stylesheets daher nicht mitten darin setzen, sondern erst nach
+    // Rückkehr in die Ereignisschleife und mehrere Änderungen zusammengefasst.
     if (m_restylePending)
         return;
     m_restylePending = true;
