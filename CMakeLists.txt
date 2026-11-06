@@ -100,6 +100,9 @@ if(PANDOCUI_BUILD_TESTS)
         enable_testing()
         qt_add_executable(tst_pandocui tests/tst_pandocui.cpp)
         target_link_libraries(tst_pandocui PRIVATE pandocui_core Qt6::Test)
+        # qt_standard_project_setup() macht Programme unter Windows zu GUI-Programmen;
+        # das Testprogramm braucht aber eine Konsole für seine Ausgabe.
+        set_target_properties(tst_pandocui PROPERTIES WIN32_EXECUTABLE OFF MACOSX_BUNDLE OFF)
         target_compile_definitions(tst_pandocui PRIVATE
             PANDOCUI_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/tests/data")
         add_test(NAME tst_pandocui COMMAND tst_pandocui)

@@ -110,7 +110,7 @@ jobs:
               $name = $line.Trim() -replace '\(\)$', ''
               if (-not $name) { continue }
               Write-Host "===== $name"
-              & $exe $name -v1 -maxwarnings 0
+              & $exe $name -v2 -maxwarnings 0
               Write-Host ("===== {0}: Exit-Code 0x{1:X8}" -f $name, $LASTEXITCODE)
           }
           exit 0
