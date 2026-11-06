@@ -104,14 +104,33 @@ jobs:
           $env:QT_QPA_PLATFORM = 'offscreen'
           $exe = 'build\windows-release\tst_pandocui.exe'
           if (-not (Test-Path $exe)) { Write-Host "Kein Testprogramm gebaut."; exit 0 }
-          $functions = & $exe -functions
-          Write-Host "-functions: Exit-Code $LASTEXITCODE"
-          foreach ($line in $functions) {
+          $failed = @()
+          foreach ($line in (& $exe -functions)) {
               $name = $line.Trim() -replace '\(\)$', ''
               if (-not $name) { continue }
-              Write-Host "===== $name"
-              & $exe $name -v2 -maxwarnings 0
-              Write-Host ("===== {0}: Exit-Code 0x{1:X8}" -f $name, $LASTEXITCODE)
+              $log = "test-$name.txt"
+              & $exe $name -v2 -maxwarnings 0 -o "$log,txt"
+              $code = $LASTEXITCODE
+              Write-Host ("===== {0}: Exit-Code 0x{1:X8}" -f $name, $code)
+              if ($code -ne 0) {
+                  $failed += $name
+                  if (Test-Path $log) { Get-Content $log -Tail 60 | ForEach-Object { Write-Host "  $_" } }
+              }
+          }
+
+          # Abgestürzte Funktionen mit Page Heap unter dem Debugger wiederholen:
+          # er hält an der Stelle an, an der der Speicher beschädigt wird.
+          $debuggers = "${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64"
+          if ($failed -and (Test-Path "$debuggers\cdb.exe")) {
+              & "$debuggers\gflags.exe" /p /enable tst_pandocui.exe /full | Out-Null
+              foreach ($name in $failed) {
+                  Write-Host "===== Stacktrace für $name"
+                  & "$debuggers\cdb.exe" -lines -y "build\windows-release" `
+                      -c ".lines -e; g; .ecxr; kP 40; q" $exe $name -maxwarnings 0 |
+                      Select-String -Pattern 'tst_pandocui|pandocui|Qt6|ntdll|Exception|exception|^\s*[0-9a-f]{2} ' |
+                      Select-Object -First 120 | ForEach-Object { Write-Host $_.Line }
+              }
+              & "$debuggers\gflags.exe" /p /disable tst_pandocui.exe | Out-Null
           }
           exit 0
       - name: ZIP-Archiv erstellen

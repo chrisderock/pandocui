@@ -20,6 +20,10 @@ qt_standard_project_setup(I18N_SOURCE_LANGUAGE de I18N_TRANSLATED_LANGUAGES en)
 
 if(MSVC)
     add_compile_options(/utf-8 /W4)
+    # Debug-Informationen (PDB) auch im Release-Build, für Stacktraces bei Abstürzen.
+    # Die PDB-Dateien werden nicht mit ausgeliefert.
+    add_compile_options($<$<CONFIG:Release>:/Zi>)
+    add_link_options($<$<CONFIG:Release>:/DEBUG> $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
 else()
     add_compile_options(-Wall -Wextra)
 endif()
