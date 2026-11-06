@@ -103,6 +103,14 @@ set(CPACK_RPM_PACKAGE_RELEASE_DIST ON)           # Dist-Tag, z. B. .el10
 # Abhängigkeit eingetragen (weiche Abhängigkeiten unterstützt CPackRPM dort nicht).
 include(CPack)
 
+# Hilfsprogramm für die Bildschirmfotos der README (siehe tools/make-screenshots.sh)
+option(PANDOCUI_BUILD_TOOLS "Hilfsprogramme bauen" OFF)
+if(PANDOCUI_BUILD_TOOLS)
+    qt_add_executable(pandocui_screenshots tools/screenshots.cpp)
+    target_link_libraries(pandocui_screenshots PRIVATE pandocui_core)
+    set_target_properties(pandocui_screenshots PROPERTIES WIN32_EXECUTABLE OFF MACOSX_BUNDLE OFF)
+endif()
+
 # Tests
 option(PANDOCUI_BUILD_TESTS "Tests bauen" ON)
 if(PANDOCUI_BUILD_TESTS)

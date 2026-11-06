@@ -1484,6 +1484,8 @@ void MainWindow::onConversionFinished(int succeeded, int failed, bool cancelled)
 
     if (!cancelled && succeeded > 0 && m_openFolderCheck->isChecked())
         QDesktopServices::openUrl(QUrl::fromLocalFile(outputDirectory()));
+
+    emit conversionFinished(succeeded, failed, cancelled);
 }
 
 void MainWindow::setBusy(bool busy)

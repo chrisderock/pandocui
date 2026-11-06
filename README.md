@@ -2,6 +2,33 @@
 
 Grafische Oberfläche für [pandoc](https://pandoc.org), erstellt mit Qt 6 (Widgets) und C++17.
 
+![PandocUi: Auswahl der Ausgabeformate](docs/screenshots/2-ausgabeformate.png)
+
+## Screenshots
+
+| | |
+|---|---|
+| **1. Eingabedatei** – Format wird automatisch erkannt | **2. Ausgabeformate** – ankreuzen oder Preset laden |
+| ![Schritt 1: Eingabedatei](docs/screenshots/1-eingabedatei.png) | ![Schritt 2: Ausgabeformate](docs/screenshots/2-ausgabeformate.png) |
+| **3. Optionen** – je Format, mit Befehlsvorschau | **4. Ausgabeordner** – Dateinamen aus der Eingabedatei |
+| ![Schritt 3: Optionen](docs/screenshots/3-optionen.png) | ![Schritt 4: Ausgabeordner](docs/screenshots/4-ausgabeordner.png) |
+| **5. Erzeugen** – Zusammenfassung und Protokoll | **pandoc fehlt** – Installationshinweise für das System |
+| ![Schritt 5: Erzeugen](docs/screenshots/5-erzeugen.png) | ![Dialog: pandoc nicht gefunden](docs/screenshots/pandoc-fehlt.png) |
+
+<details>
+<summary>Englische Oberfläche</summary>
+
+| | |
+|---|---|
+| ![Step 1: Input file](docs/screenshots/en-1-eingabedatei.png) | ![Step 2: Output formats](docs/screenshots/en-2-ausgabeformate.png) |
+| ![Step 3: Options](docs/screenshots/en-3-optionen.png) | ![Step 4: Output folder](docs/screenshots/en-4-ausgabeordner.png) |
+| ![Step 5: Generate](docs/screenshots/en-5-erzeugen.png) | ![Dialog: pandoc not found](docs/screenshots/en-pandoc-fehlt.png) |
+
+</details>
+
+Die Bilder entstehen automatisch mit `tools/make-screenshots.sh` (Linux/WSL, benötigt
+pandoc und xelatex) und lassen sich nach Änderungen an der Oberfläche so neu erzeugen.
+
 ## Ablauf
 
 Die Oberfläche führt als Wizard durch fünf Schritte. Links zeigt eine Schrittleiste alle
@@ -205,6 +232,7 @@ zusammen mit `SHA256SUMS.txt` als GitHub-Release mit automatisch erzeugten Relea
 | `src/presetstore.*` | Speichern, Laden, Import und Export von Presets (JSON) |
 | `src/translation.*` | Sprachauswahl und Laden der Übersetzungen |
 | `translations/` | Übersetzungsdateien (Qt Linguist) |
+| `tools/` | Hilfsprogramm und Skript für die Screenshots (`docs/screenshots/`) |
 | `src/conversionrunner.*` | Führt die pandoc-Aufrufe nacheinander per `QProcess` aus |
 | `src/mainwindow.*` | Hauptfenster mit den fünf Schritten |
 | `tests/` | QtTest-Tests und Beispieldokument |

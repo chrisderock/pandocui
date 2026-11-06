@@ -64,6 +64,9 @@ public:
     QList<ConversionJob> buildJobs() const;
     QString pandocExecutable() const { return m_pandocPath; }
 
+    // Startet die Umwandlung aller gewählten Formate (wie die Schaltfläche "Konvertieren").
+    void startConversion();
+
     // Beim Start aufrufen: zeigt Installationshinweise, falls pandoc fehlt.
     void checkPandocAtStartup();
     void showPandocMissingDialog();
@@ -75,6 +78,9 @@ public:
     bool loadPreset(const QString &name);
     QString currentPresetName() const { return m_currentPresetName; }
     const PresetStore &presetStore() const { return m_presets; }
+
+signals:
+    void conversionFinished(int succeeded, int failed, bool cancelled);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -119,7 +125,6 @@ private:
     void updateWizard();
     QString summaryHtml() const;
 
-    void startConversion();
     void onJobStarted(int index, int total, const ConversionJob &job);
     void onJobFinished(int index, const ConversionJob &job, bool success, const QString &message);
     void onConversionFinished(int succeeded, int failed, bool cancelled);
