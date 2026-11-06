@@ -171,7 +171,7 @@ und bei Pull Requests für
 | Plattform | Umgebung | Ergebnis |
 |-----------|----------|----------|
 | Windows | `windows-latest`, MSVC, Qt 6.8 LTS | `PandocUi-<version>-windows-x64.zip` (mit Qt-DLLs, ohne pandoc) |
-| macOS | `macos-26`, Universal-Binary (Apple Silicon + Intel), Qt 6.8 LTS, ab macOS 12 | `PandocUi-<version>-macos-universal.dmg` (App-Bundle, ohne pandoc) |
+| macOS | `macos-26`, Universal-Binary (Apple Silicon + Intel), Qt 6.10, ab macOS 13 | `PandocUi-<version>-macos-universal.dmg` (App-Bundle, ohne pandoc) |
 | Debian 13 | Container `debian:13` | `pandocui_<version>_debian13_amd64.deb` |
 | Rocky Linux 10 | Container `rockylinux/rockylinux:10` | `pandocui-<version>-1.el10.x86_64.rpm` |
 
