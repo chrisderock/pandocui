@@ -11,10 +11,11 @@ namespace PandocFormats {
 
 namespace {
 
-QString tr(const char *text)
+// Übersetzungskontext "PandocFormats" für die freien Funktionen dieses Namensraums
+struct Tr
 {
-    return QCoreApplication::translate("PandocFormats", text);
-}
+    Q_DECLARE_TR_FUNCTIONS(PandocFormats)
+};
 
 // ---------------------------------------------------------------------------
 // Erkennung des Eingabeformats
@@ -210,79 +211,79 @@ OptionDef metadata(OptionDef o)
 QList<OptionDef> latexVariables()
 {
     return {
-        variable(choiceOpt("documentclass", tr("Dokumentklasse"),
-                           tr("LaTeX-Dokumentklasse (-V documentclass)"),
+        variable(choiceOpt("documentclass", Tr::tr("Dokumentklasse"),
+                           Tr::tr("LaTeX-Dokumentklasse (-V documentclass)"),
                            {"article", "report", "book", "scrartcl", "scrreprt", "scrbook"})),
-        variable(choiceOpt("papersize", tr("Papierformat"), tr("Papiergröße (-V papersize)"),
+        variable(choiceOpt("papersize", Tr::tr("Papierformat"), Tr::tr("Papiergröße (-V papersize)"),
                            {"a4", "a5", "letter", "legal"})),
-        variable(choiceOpt("fontsize", tr("Schriftgröße"), tr("Grundschriftgröße (-V fontsize)"),
+        variable(choiceOpt("fontsize", Tr::tr("Schriftgröße"), Tr::tr("Grundschriftgröße (-V fontsize)"),
                            {"10pt", "11pt", "12pt"})),
-        variable(textOpt("geometry", tr("Seitenränder"),
-                         tr("Wert für das LaTeX-Paket geometry (-V geometry)"),
+        variable(textOpt("geometry", Tr::tr("Seitenränder"),
+                         Tr::tr("Wert für das LaTeX-Paket geometry (-V geometry)"),
                          "margin=2.5cm")),
-        variable(textOpt("mainfont", tr("Schriftart"),
-                         tr("Hauptschrift; nur mit xelatex oder lualatex (-V mainfont)"),
-                         "z. B. Liberation Serif")),
-        variable(textOpt("linestretch", tr("Zeilenabstand"),
-                         tr("Faktor für den Zeilenabstand (-V linestretch)"), "z. B. 1.25")),
-        variable(boolOpt("colorlinks", tr("Farbige Links"),
-                         tr("Hyperlinks farbig statt umrandet darstellen (-V colorlinks)"))),
-        variable(boolOpt("lof", tr("Abbildungsverzeichnis"),
-                         tr("Abbildungsverzeichnis einfügen (-V lof)"))),
-        variable(boolOpt("lot", tr("Tabellenverzeichnis"),
-                         tr("Tabellenverzeichnis einfügen (-V lot)"))),
+        variable(textOpt("mainfont", Tr::tr("Schriftart"),
+                         Tr::tr("Hauptschrift; nur mit xelatex oder lualatex (-V mainfont)"),
+                         Tr::tr("z. B. Liberation Serif"))),
+        variable(textOpt("linestretch", Tr::tr("Zeilenabstand"),
+                         Tr::tr("Faktor für den Zeilenabstand (-V linestretch)"), Tr::tr("z. B. 1.25"))),
+        variable(boolOpt("colorlinks", Tr::tr("Farbige Links"),
+                         Tr::tr("Hyperlinks farbig statt umrandet darstellen (-V colorlinks)"))),
+        variable(boolOpt("lof", Tr::tr("Abbildungsverzeichnis"),
+                         Tr::tr("Abbildungsverzeichnis einfügen (-V lof)"))),
+        variable(boolOpt("lot", Tr::tr("Tabellenverzeichnis"),
+                         Tr::tr("Tabellenverzeichnis einfügen (-V lot)"))),
     };
 }
 
 QList<OptionDef> slideOptions()
 {
     return {
-        intOpt("--slide-level", tr("Folienebene"),
-               tr("Überschriftenebene, die eine neue Folie beginnt (--slide-level)"), 1, 6),
-        boolOpt("--incremental", tr("Listen schrittweise einblenden"),
-                tr("Listenpunkte nacheinander anzeigen (--incremental)")),
+        intOpt("--slide-level", Tr::tr("Folienebene"),
+               Tr::tr("Überschriftenebene, die eine neue Folie beginnt (--slide-level)"), 1, 6),
+        boolOpt("--incremental", Tr::tr("Listen schrittweise einblenden"),
+                Tr::tr("Listenpunkte nacheinander anzeigen (--incremental)")),
     };
 }
 
 QList<OptionDef> specificOptions(const QString &f)
 {
-    const QString cssFilter = tr("CSS-Dateien (*.css);;Alle Dateien (*)");
+    const QString cssFilter = Tr::tr("CSS-Dateien (*.css);;Alle Dateien (*)");
 
     if (htmlFormats.contains(f)) {
         QList<OptionDef> list = {
-            boolOpt("--embed-resources", tr("Ressourcen einbetten"),
-                    tr("Bilder, Stylesheets und Skripte in die HTML-Datei einbetten "
+            boolOpt("--embed-resources", Tr::tr("Ressourcen einbetten"),
+                    Tr::tr("Bilder, Stylesheets und Skripte in die HTML-Datei einbetten "
                        "(--embed-resources, benötigt „Vollständiges Dokument“)")),
-            fileOpt("--css", tr("Stylesheet (CSS)"), tr("CSS-Datei verknüpfen (--css)"), cssFilter),
-            choiceOpt("math", tr("Formeldarstellung"),
-                      tr("Methode zur Darstellung mathematischer Formeln"), mathMethods,
+            fileOpt("--css", Tr::tr("Stylesheet (CSS)"), Tr::tr("CSS-Datei verknüpfen (--css)"), cssFilter),
+            choiceOpt("math", Tr::tr("Formeldarstellung"),
+                      Tr::tr("Methode zur Darstellung mathematischer Formeln"), mathMethods,
                       OptionDef::Style::ChoiceSwitch),
-            boolOpt("--section-divs", tr("Abschnitte in <section> einschließen"),
-                    tr("Abschnitte als <section>-Elemente ausgeben (--section-divs)")),
+            boolOpt("--section-divs", Tr::tr("Abschnitte in <section> einschließen"),
+                    Tr::tr("Abschnitte als <section>-Elemente ausgeben (--section-divs)")),
         };
         if (f == QLatin1String("chunkedhtml"))
-            list << intOpt("--split-level", tr("Aufteilungsebene"),
-                           tr("Überschriftenebene, an der in Einzeldateien aufgeteilt wird "
+            list << intOpt("--split-level", Tr::tr("Aufteilungsebene"),
+                           Tr::tr("Überschriftenebene, an der in Einzeldateien aufgeteilt wird "
                               "(--split-level)"), 1, 6);
         return list;
     }
 
     if (htmlSlideFormats.contains(f)) {
         QList<OptionDef> list = slideOptions();
-        list << boolOpt("--embed-resources", tr("Ressourcen einbetten"),
-                        tr("Alles in eine einzelne HTML-Datei einbetten (--embed-resources)"))
-             << fileOpt("--css", tr("Stylesheet (CSS)"), tr("CSS-Datei verknüpfen (--css)"),
+        list << boolOpt("--embed-resources", Tr::tr("Ressourcen einbetten"),
+                        Tr::tr("Alles in eine einzelne HTML-Datei einbetten (--embed-resources)"))
+             << fileOpt("--css", Tr::tr("Stylesheet (CSS)"), Tr::tr("CSS-Datei verknüpfen (--css)"),
                         cssFilter)
-             << choiceOpt("math", tr("Formeldarstellung"),
-                          tr("Methode zur Darstellung mathematischer Formeln"), mathMethods,
+             << choiceOpt("math", Tr::tr("Formeldarstellung"),
+                          Tr::tr("Methode zur Darstellung mathematischer Formeln"), mathMethods,
                           OptionDef::Style::ChoiceSwitch);
         if (f == QLatin1String("revealjs")) {
-            list << variable(choiceOpt("theme", tr("Design"), tr("reveal.js-Theme (-V theme)"),
+            list << variable(choiceOpt("theme", Tr::tr("Design"), Tr::tr("reveal.js-Theme (-V theme)"),
                                        {"black", "white", "league", "beige", "sky", "night",
                                         "serif", "simple", "solarized", "blood", "moon",
                                         "dracula"}))
-                 << variable(choiceOpt("transition", tr("Folienübergang"),
-                                       tr("Übergangseffekt (-V transition)"),
+                 << variable(choiceOpt("transition", Tr::tr("Folienübergang"),
+                                       Tr::tr("Übergangseffekt (-V transition)"),
                                        {"none", "fade", "slide", "convex", "concave", "zoom"}));
         }
         return list;
@@ -290,8 +291,8 @@ QList<OptionDef> specificOptions(const QString &f)
 
     if (f == QLatin1String("pdf")) {
         QList<OptionDef> list = {
-            choiceOpt("--pdf-engine", tr("PDF-Erzeugung"),
-                      tr("Programm, mit dem pandoc das PDF erzeugt (--pdf-engine). "
+            choiceOpt("--pdf-engine", Tr::tr("PDF-Erzeugung"),
+                      Tr::tr("Programm, mit dem pandoc das PDF erzeugt (--pdf-engine). "
                          "Das Programm muss installiert sein."),
                       {"pdflatex", "xelatex", "lualatex", "latexmk", "tectonic", "typst",
                        "context", "wkhtmltopdf", "weasyprint", "pagedjs-cli", "prince"}),
@@ -306,41 +307,41 @@ QList<OptionDef> specificOptions(const QString &f)
 
     if (f == QLatin1String("beamer")) {
         QList<OptionDef> list = slideOptions();
-        list << choiceOpt("--pdf-engine", tr("PDF-Erzeugung"),
-                          tr("Programm, mit dem pandoc das PDF erzeugt (--pdf-engine)"),
+        list << choiceOpt("--pdf-engine", Tr::tr("PDF-Erzeugung"),
+                          Tr::tr("Programm, mit dem pandoc das PDF erzeugt (--pdf-engine)"),
                           {"pdflatex", "xelatex", "lualatex", "latexmk", "tectonic"})
-             << variable(choiceOpt("theme", tr("Design"), tr("Beamer-Theme (-V theme)"),
+             << variable(choiceOpt("theme", Tr::tr("Design"), Tr::tr("Beamer-Theme (-V theme)"),
                                    {"default", "Madrid", "Warsaw", "Berlin", "Boadilla",
                                     "CambridgeUS", "Copenhagen", "Darmstadt", "Frankfurt",
                                     "Singapore", "Szeged", "metropolis"}))
-             << variable(choiceOpt("aspectratio", tr("Seitenverhältnis"),
-                                   tr("Seitenverhältnis der Folien (-V aspectratio)"),
+             << variable(choiceOpt("aspectratio", Tr::tr("Seitenverhältnis"),
+                                   Tr::tr("Seitenverhältnis der Folien (-V aspectratio)"),
                                    {"169", "1610", "43", "149", "54"}));
         return list;
     }
 
     if (f == QLatin1String("context")) {
-        return {variable(choiceOpt("papersize", tr("Papierformat"),
-                                   tr("Papiergröße (-V papersize)"), {"A4", "A5", "letter"}))};
+        return {variable(choiceOpt("papersize", Tr::tr("Papierformat"),
+                                   Tr::tr("Papiergröße (-V papersize)"), {"A4", "A5", "letter"}))};
     }
 
     if (f == QLatin1String("docx")) {
-        return {fileOpt("--reference-doc", tr("Vorlage (Referenzdokument)"),
-                        tr("Word-Datei, deren Formatvorlagen übernommen werden (--reference-doc)"),
-                        tr("Word-Dokumente (*.docx *.dotx);;Alle Dateien (*)"))};
+        return {fileOpt("--reference-doc", Tr::tr("Vorlage (Referenzdokument)"),
+                        Tr::tr("Word-Datei, deren Formatvorlagen übernommen werden (--reference-doc)"),
+                        Tr::tr("Word-Dokumente (*.docx *.dotx);;Alle Dateien (*)"))};
     }
 
     if (f == QLatin1String("odt")) {
-        return {fileOpt("--reference-doc", tr("Vorlage (Referenzdokument)"),
-                        tr("ODT-Datei, deren Formatvorlagen übernommen werden (--reference-doc)"),
-                        tr("OpenDocument-Text (*.odt *.ott);;Alle Dateien (*)"))};
+        return {fileOpt("--reference-doc", Tr::tr("Vorlage (Referenzdokument)"),
+                        Tr::tr("ODT-Datei, deren Formatvorlagen übernommen werden (--reference-doc)"),
+                        Tr::tr("OpenDocument-Text (*.odt *.ott);;Alle Dateien (*)"))};
     }
 
     if (f == QLatin1String("pptx")) {
         QList<OptionDef> list = {
-            fileOpt("--reference-doc", tr("Vorlage (Referenzdokument)"),
-                    tr("PowerPoint-Datei, deren Layouts übernommen werden (--reference-doc)"),
-                    tr("PowerPoint (*.pptx *.potx);;Alle Dateien (*)")),
+            fileOpt("--reference-doc", Tr::tr("Vorlage (Referenzdokument)"),
+                    Tr::tr("PowerPoint-Datei, deren Layouts übernommen werden (--reference-doc)"),
+                    Tr::tr("PowerPoint (*.pptx *.potx);;Alle Dateien (*)")),
         };
         list << slideOptions();
         return list;
@@ -348,53 +349,53 @@ QList<OptionDef> specificOptions(const QString &f)
 
     if (epubFormats.contains(f)) {
         return {
-            fileOpt("--epub-cover-image", tr("Titelbild"), tr("Coverbild (--epub-cover-image)"),
-                    tr("Bilder (*.png *.jpg *.jpeg *.gif *.svg);;Alle Dateien (*)")),
-            fileOpt("--css", tr("Stylesheet (CSS)"), tr("CSS-Datei für das E-Book (--css)"),
+            fileOpt("--epub-cover-image", Tr::tr("Titelbild"), Tr::tr("Coverbild (--epub-cover-image)"),
+                    Tr::tr("Bilder (*.png *.jpg *.jpeg *.gif *.svg);;Alle Dateien (*)")),
+            fileOpt("--css", Tr::tr("Stylesheet (CSS)"), Tr::tr("CSS-Datei für das E-Book (--css)"),
                     cssFilter),
-            fileOpt("--epub-metadata", tr("Metadaten (XML)"),
-                    tr("Dublin-Core-Metadaten als XML-Datei (--epub-metadata)"),
-                    tr("XML-Dateien (*.xml);;Alle Dateien (*)")),
-            fileOpt("--epub-embed-font", tr("Schriftart einbetten"),
-                    tr("Schriftdatei, die eingebettet wird (--epub-embed-font)"),
-                    tr("Schriften (*.ttf *.otf *.woff *.woff2);;Alle Dateien (*)")),
-            intOpt("--split-level", tr("Kapitelebene"),
-                   tr("Überschriftenebene, an der in Kapiteldateien aufgeteilt wird "
+            fileOpt("--epub-metadata", Tr::tr("Metadaten (XML)"),
+                    Tr::tr("Dublin-Core-Metadaten als XML-Datei (--epub-metadata)"),
+                    Tr::tr("XML-Dateien (*.xml);;Alle Dateien (*)")),
+            fileOpt("--epub-embed-font", Tr::tr("Schriftart einbetten"),
+                    Tr::tr("Schriftdatei, die eingebettet wird (--epub-embed-font)"),
+                    Tr::tr("Schriften (*.ttf *.otf *.woff *.woff2);;Alle Dateien (*)")),
+            intOpt("--split-level", Tr::tr("Kapitelebene"),
+                   Tr::tr("Überschriftenebene, an der in Kapiteldateien aufgeteilt wird "
                       "(--split-level)"), 1, 6),
         };
     }
 
     if (markdownFormats.contains(f)) {
         QList<OptionDef> list = {
-            boolOpt("--reference-links", tr("Referenz-Links"),
-                    tr("Links als Referenzen statt inline ausgeben (--reference-links)")),
+            boolOpt("--reference-links", Tr::tr("Referenz-Links"),
+                    Tr::tr("Links als Referenzen statt inline ausgeben (--reference-links)")),
         };
         if (f.startsWith(QLatin1String("markdown")))
-            list << choiceOpt("--markdown-headings", tr("Überschriftenstil"),
-                              tr("ATX (# Titel) oder Setext (unterstrichen) "
+            list << choiceOpt("--markdown-headings", Tr::tr("Überschriftenstil"),
+                              Tr::tr("ATX (# Titel) oder Setext (unterstrichen) "
                                  "(--markdown-headings)"),
                               {"atx", "setext"});
         return list;
     }
 
     if (f == QLatin1String("rst")) {
-        return {boolOpt("--reference-links", tr("Referenz-Links"),
-                        tr("Links als Referenzen statt inline ausgeben (--reference-links)"))};
+        return {boolOpt("--reference-links", Tr::tr("Referenz-Links"),
+                        Tr::tr("Links als Referenzen statt inline ausgeben (--reference-links)"))};
     }
 
     if (f == QLatin1String("typst")) {
         return {
-            variable(choiceOpt("papersize", tr("Papierformat"), tr("Papiergröße (-V papersize)"),
+            variable(choiceOpt("papersize", Tr::tr("Papierformat"), Tr::tr("Papiergröße (-V papersize)"),
                                {"a4", "a5", "us-letter"})),
-            variable(textOpt("mainfont", tr("Schriftart"), tr("Hauptschrift (-V mainfont)"))),
-            variable(textOpt("fontsize", tr("Schriftgröße"), tr("Schriftgröße (-V fontsize)"),
-                             "z. B. 11pt")),
+            variable(textOpt("mainfont", Tr::tr("Schriftart"), Tr::tr("Hauptschrift (-V mainfont)"))),
+            variable(textOpt("fontsize", Tr::tr("Schriftgröße"), Tr::tr("Schriftgröße (-V fontsize)"),
+                             Tr::tr("z. B. 11pt"))),
         };
     }
 
     if (f == QLatin1String("ipynb")) {
-        return {choiceOpt("--ipynb-output", tr("Zellausgaben"),
-                          tr("Welche Zellausgaben übernommen werden (--ipynb-output)"),
+        return {choiceOpt("--ipynb-output", Tr::tr("Zellausgaben"),
+                          Tr::tr("Welche Zellausgaben übernommen werden (--ipynb-output)"),
                           {"best", "all", "none"})};
     }
 
@@ -414,13 +415,13 @@ QString detectInputFormat(const QString &filePath, const QStringList &available,
 
     if (suffix == QLatin1String("xml")) {
         format = sniffXml(filePath);
-        how = tr("anhand des Dateiinhalts");
+        how = Tr::tr("anhand des Dateiinhalts");
     } else if (suffix == QLatin1String("json")) {
         format = sniffJson(filePath);
-        how = tr("anhand des Dateiinhalts");
+        how = Tr::tr("anhand des Dateiinhalts");
     } else {
         format = inputExtensionMap().value(suffix);
-        how = tr("anhand der Dateiendung .%1").arg(suffix);
+        how = Tr::tr("anhand der Dateiendung .%1").arg(suffix);
     }
 
     if (format.isEmpty() || (!available.isEmpty() && !available.contains(format))) {
@@ -495,89 +496,89 @@ QString outputFileName(const QString &baseName, const QString &format,
 QString description(const QString &format)
 {
     static const QHash<QString, const char *> map = {
-        {"pdf", "PDF-Dokument"},
-        {"html", "HTML-Webseite"},
-        {"html4", "HTML 4 / XHTML"},
-        {"html5", "HTML5-Webseite"},
-        {"chunkedhtml", "HTML, in Abschnitte aufgeteilt (ZIP)"},
-        {"docx", "Microsoft Word"},
-        {"odt", "OpenDocument-Text (LibreOffice)"},
-        {"rtf", "Rich Text Format"},
-        {"epub", "E-Book (EPUB 3)"},
-        {"epub2", "E-Book (EPUB 2)"},
-        {"epub3", "E-Book (EPUB 3)"},
-        {"fb2", "E-Book (FictionBook 2)"},
-        {"pptx", "PowerPoint-Präsentation"},
-        {"latex", "LaTeX-Quelltext"},
-        {"beamer", "LaTeX-Beamer-Folien (PDF)"},
-        {"context", "ConTeXt-Quelltext"},
-        {"typst", "Typst-Quelltext"},
-        {"texinfo", "GNU Texinfo"},
-        {"markdown", "Pandoc-Markdown"},
-        {"markdown_strict", "Markdown (ursprüngliche Syntax)"},
-        {"markdown_phpextra", "PHP Markdown Extra"},
-        {"markdown_mmd", "MultiMarkdown"},
-        {"markdown_github", "GitHub-Markdown (veraltet)"},
-        {"gfm", "GitHub-Markdown"},
-        {"commonmark", "CommonMark"},
-        {"commonmark_x", "CommonMark mit Erweiterungen"},
-        {"markua", "Markua"},
-        {"djot", "Djot"},
-        {"rst", "reStructuredText"},
-        {"asciidoc", "AsciiDoc"},
-        {"asciidoctor", "AsciiDoc (Asciidoctor)"},
-        {"asciidoc_legacy", "AsciiDoc (Python-Version)"},
-        {"org", "Emacs Org-Mode"},
-        {"plain", "Reiner Text"},
-        {"ansi", "Text mit ANSI-Formatierung"},
-        {"textile", "Textile"},
-        {"mediawiki", "MediaWiki"},
-        {"dokuwiki", "DokuWiki"},
-        {"zimwiki", "Zim-Wiki"},
-        {"xwiki", "XWiki"},
-        {"tikiwiki", "TikiWiki"},
-        {"jira", "Jira-Wiki"},
-        {"creole", "Creole-Wiki"},
-        {"twiki", "TWiki"},
-        {"vimwiki", "Vimwiki"},
-        {"revealjs", "reveal.js-Präsentation (HTML)"},
-        {"slidy", "Slidy-Präsentation (HTML)"},
-        {"slideous", "Slideous-Präsentation (HTML)"},
-        {"dzslides", "DZSlides-Präsentation (HTML)"},
-        {"s5", "S5-Präsentation (HTML)"},
-        {"man", "Manpage (roff)"},
-        {"ms", "roff ms"},
-        {"docbook", "DocBook XML"},
-        {"docbook4", "DocBook 4"},
-        {"docbook5", "DocBook 5"},
-        {"jats", "JATS XML"},
-        {"jats_archiving", "JATS Archiving"},
-        {"jats_articleauthoring", "JATS Article Authoring"},
-        {"jats_publishing", "JATS Publishing"},
-        {"tei", "TEI Simple"},
-        {"icml", "Adobe InCopy (ICML)"},
-        {"opml", "OPML-Gliederung"},
-        {"ipynb", "Jupyter Notebook"},
-        {"json", "Pandoc-AST als JSON"},
-        {"native", "Pandoc-AST (Haskell)"},
-        {"xml", "Pandoc-AST als XML"},
-        {"haddock", "Haddock-Markup"},
-        {"muse", "Emacs Muse"},
-        {"biblatex", "BibLaTeX-Literaturliste"},
-        {"bibtex", "BibTeX-Literaturliste"},
-        {"csljson", "CSL-JSON-Literaturliste"},
-        {"endnotexml", "EndNote XML"},
-        {"ris", "RIS-Literaturliste"},
-        {"csv", "CSV-Tabelle"},
-        {"tsv", "TSV-Tabelle"},
-        {"xlsx", "Excel-Tabelle"},
-        {"t2t", "txt2tags"},
-        {"pod", "Perl POD"},
-        {"vimdoc", "Vim-Hilfedatei"},
-        {"bbcode", "BBCode"},
+        {"pdf", QT_TRANSLATE_NOOP("PandocFormats", "PDF-Dokument")},
+        {"html", QT_TRANSLATE_NOOP("PandocFormats", "HTML-Webseite")},
+        {"html4", QT_TRANSLATE_NOOP("PandocFormats", "HTML 4 / XHTML")},
+        {"html5", QT_TRANSLATE_NOOP("PandocFormats", "HTML5-Webseite")},
+        {"chunkedhtml", QT_TRANSLATE_NOOP("PandocFormats", "HTML, in Abschnitte aufgeteilt (ZIP)")},
+        {"docx", QT_TRANSLATE_NOOP("PandocFormats", "Microsoft Word")},
+        {"odt", QT_TRANSLATE_NOOP("PandocFormats", "OpenDocument-Text (LibreOffice)")},
+        {"rtf", QT_TRANSLATE_NOOP("PandocFormats", "Rich Text Format")},
+        {"epub", QT_TRANSLATE_NOOP("PandocFormats", "E-Book (EPUB 3)")},
+        {"epub2", QT_TRANSLATE_NOOP("PandocFormats", "E-Book (EPUB 2)")},
+        {"epub3", QT_TRANSLATE_NOOP("PandocFormats", "E-Book (EPUB 3)")},
+        {"fb2", QT_TRANSLATE_NOOP("PandocFormats", "E-Book (FictionBook 2)")},
+        {"pptx", QT_TRANSLATE_NOOP("PandocFormats", "PowerPoint-Präsentation")},
+        {"latex", QT_TRANSLATE_NOOP("PandocFormats", "LaTeX-Quelltext")},
+        {"beamer", QT_TRANSLATE_NOOP("PandocFormats", "LaTeX-Beamer-Folien (PDF)")},
+        {"context", QT_TRANSLATE_NOOP("PandocFormats", "ConTeXt-Quelltext")},
+        {"typst", QT_TRANSLATE_NOOP("PandocFormats", "Typst-Quelltext")},
+        {"texinfo", QT_TRANSLATE_NOOP("PandocFormats", "GNU Texinfo")},
+        {"markdown", QT_TRANSLATE_NOOP("PandocFormats", "Pandoc-Markdown")},
+        {"markdown_strict", QT_TRANSLATE_NOOP("PandocFormats", "Markdown (ursprüngliche Syntax)")},
+        {"markdown_phpextra", QT_TRANSLATE_NOOP("PandocFormats", "PHP Markdown Extra")},
+        {"markdown_mmd", QT_TRANSLATE_NOOP("PandocFormats", "MultiMarkdown")},
+        {"markdown_github", QT_TRANSLATE_NOOP("PandocFormats", "GitHub-Markdown (veraltet)")},
+        {"gfm", QT_TRANSLATE_NOOP("PandocFormats", "GitHub-Markdown")},
+        {"commonmark", QT_TRANSLATE_NOOP("PandocFormats", "CommonMark")},
+        {"commonmark_x", QT_TRANSLATE_NOOP("PandocFormats", "CommonMark mit Erweiterungen")},
+        {"markua", QT_TRANSLATE_NOOP("PandocFormats", "Markua")},
+        {"djot", QT_TRANSLATE_NOOP("PandocFormats", "Djot")},
+        {"rst", QT_TRANSLATE_NOOP("PandocFormats", "reStructuredText")},
+        {"asciidoc", QT_TRANSLATE_NOOP("PandocFormats", "AsciiDoc")},
+        {"asciidoctor", QT_TRANSLATE_NOOP("PandocFormats", "AsciiDoc (Asciidoctor)")},
+        {"asciidoc_legacy", QT_TRANSLATE_NOOP("PandocFormats", "AsciiDoc (Python-Version)")},
+        {"org", QT_TRANSLATE_NOOP("PandocFormats", "Emacs Org-Mode")},
+        {"plain", QT_TRANSLATE_NOOP("PandocFormats", "Reiner Text")},
+        {"ansi", QT_TRANSLATE_NOOP("PandocFormats", "Text mit ANSI-Formatierung")},
+        {"textile", QT_TRANSLATE_NOOP("PandocFormats", "Textile")},
+        {"mediawiki", QT_TRANSLATE_NOOP("PandocFormats", "MediaWiki")},
+        {"dokuwiki", QT_TRANSLATE_NOOP("PandocFormats", "DokuWiki")},
+        {"zimwiki", QT_TRANSLATE_NOOP("PandocFormats", "Zim-Wiki")},
+        {"xwiki", QT_TRANSLATE_NOOP("PandocFormats", "XWiki")},
+        {"tikiwiki", QT_TRANSLATE_NOOP("PandocFormats", "TikiWiki")},
+        {"jira", QT_TRANSLATE_NOOP("PandocFormats", "Jira-Wiki")},
+        {"creole", QT_TRANSLATE_NOOP("PandocFormats", "Creole-Wiki")},
+        {"twiki", QT_TRANSLATE_NOOP("PandocFormats", "TWiki")},
+        {"vimwiki", QT_TRANSLATE_NOOP("PandocFormats", "Vimwiki")},
+        {"revealjs", QT_TRANSLATE_NOOP("PandocFormats", "reveal.js-Präsentation (HTML)")},
+        {"slidy", QT_TRANSLATE_NOOP("PandocFormats", "Slidy-Präsentation (HTML)")},
+        {"slideous", QT_TRANSLATE_NOOP("PandocFormats", "Slideous-Präsentation (HTML)")},
+        {"dzslides", QT_TRANSLATE_NOOP("PandocFormats", "DZSlides-Präsentation (HTML)")},
+        {"s5", QT_TRANSLATE_NOOP("PandocFormats", "S5-Präsentation (HTML)")},
+        {"man", QT_TRANSLATE_NOOP("PandocFormats", "Manpage (roff)")},
+        {"ms", QT_TRANSLATE_NOOP("PandocFormats", "roff ms")},
+        {"docbook", QT_TRANSLATE_NOOP("PandocFormats", "DocBook XML")},
+        {"docbook4", QT_TRANSLATE_NOOP("PandocFormats", "DocBook 4")},
+        {"docbook5", QT_TRANSLATE_NOOP("PandocFormats", "DocBook 5")},
+        {"jats", QT_TRANSLATE_NOOP("PandocFormats", "JATS XML")},
+        {"jats_archiving", QT_TRANSLATE_NOOP("PandocFormats", "JATS Archiving")},
+        {"jats_articleauthoring", QT_TRANSLATE_NOOP("PandocFormats", "JATS Article Authoring")},
+        {"jats_publishing", QT_TRANSLATE_NOOP("PandocFormats", "JATS Publishing")},
+        {"tei", QT_TRANSLATE_NOOP("PandocFormats", "TEI Simple")},
+        {"icml", QT_TRANSLATE_NOOP("PandocFormats", "Adobe InCopy (ICML)")},
+        {"opml", QT_TRANSLATE_NOOP("PandocFormats", "OPML-Gliederung")},
+        {"ipynb", QT_TRANSLATE_NOOP("PandocFormats", "Jupyter Notebook")},
+        {"json", QT_TRANSLATE_NOOP("PandocFormats", "Pandoc-AST als JSON")},
+        {"native", QT_TRANSLATE_NOOP("PandocFormats", "Pandoc-AST (Haskell)")},
+        {"xml", QT_TRANSLATE_NOOP("PandocFormats", "Pandoc-AST als XML")},
+        {"haddock", QT_TRANSLATE_NOOP("PandocFormats", "Haddock-Markup")},
+        {"muse", QT_TRANSLATE_NOOP("PandocFormats", "Emacs Muse")},
+        {"biblatex", QT_TRANSLATE_NOOP("PandocFormats", "BibLaTeX-Literaturliste")},
+        {"bibtex", QT_TRANSLATE_NOOP("PandocFormats", "BibTeX-Literaturliste")},
+        {"csljson", QT_TRANSLATE_NOOP("PandocFormats", "CSL-JSON-Literaturliste")},
+        {"endnotexml", QT_TRANSLATE_NOOP("PandocFormats", "EndNote XML")},
+        {"ris", QT_TRANSLATE_NOOP("PandocFormats", "RIS-Literaturliste")},
+        {"csv", QT_TRANSLATE_NOOP("PandocFormats", "CSV-Tabelle")},
+        {"tsv", QT_TRANSLATE_NOOP("PandocFormats", "TSV-Tabelle")},
+        {"xlsx", QT_TRANSLATE_NOOP("PandocFormats", "Excel-Tabelle")},
+        {"t2t", QT_TRANSLATE_NOOP("PandocFormats", "txt2tags")},
+        {"pod", QT_TRANSLATE_NOOP("PandocFormats", "Perl POD")},
+        {"vimdoc", QT_TRANSLATE_NOOP("PandocFormats", "Vim-Hilfedatei")},
+        {"bbcode", QT_TRANSLATE_NOOP("PandocFormats", "BBCode")},
     };
     const auto it = map.constFind(format);
-    return it == map.constEnd() ? QString() : tr(it.value());
+    return it == map.constEnd() ? QString() : Tr::tr(it.value());
 }
 
 QStringList commonOutputFormats()
@@ -611,68 +612,68 @@ QList<OptionGroup> optionGroups(const QString &f)
 {
     QList<OptionGroup> groups;
 
-    OptionGroup general{tr("Allgemein"), {}};
+    OptionGroup general{Tr::tr("Allgemein"), {}};
     if (!alwaysStandalone.contains(f)) {
-        general.options << boolOpt("--standalone", tr("Vollständiges Dokument"),
-                                   tr("Mit Kopf- und Fußteil statt als Fragment ausgeben "
+        general.options << boolOpt("--standalone", Tr::tr("Vollständiges Dokument"),
+                                   Tr::tr("Mit Kopf- und Fußteil statt als Fragment ausgeben "
                                       "(--standalone)"),
                                    !fragmentByDefault.contains(f));
     }
-    general.options << boolOpt("--toc", tr("Inhaltsverzeichnis"),
-                               tr("Automatisches Inhaltsverzeichnis erzeugen (--toc)"))
-                    << intOpt("--toc-depth", tr("Tiefe des Inhaltsverzeichnisses"),
-                              tr("Anzahl der Überschriftenebenen im Verzeichnis (--toc-depth)"),
+    general.options << boolOpt("--toc", Tr::tr("Inhaltsverzeichnis"),
+                               Tr::tr("Automatisches Inhaltsverzeichnis erzeugen (--toc)"))
+                    << intOpt("--toc-depth", Tr::tr("Tiefe des Inhaltsverzeichnisses"),
+                              Tr::tr("Anzahl der Überschriftenebenen im Verzeichnis (--toc-depth)"),
                               1, 6)
-                    << boolOpt("--number-sections", tr("Abschnitte nummerieren"),
-                               tr("Überschriften nummerieren (--number-sections)"));
+                    << boolOpt("--number-sections", Tr::tr("Abschnitte nummerieren"),
+                               Tr::tr("Überschriften nummerieren (--number-sections)"));
     groups << general;
 
     groups << OptionGroup{
-        tr("Metadaten"),
+        Tr::tr("Metadaten"),
         {
-            metadata(textOpt("title", tr("Titel"),
-                             tr("Dokumenttitel; überschreibt den Titel der Eingabe (-M title)"))),
-            metadata(textOpt("author", tr("Autor"), tr("Autor des Dokuments (-M author)"))),
-            metadata(textOpt("lang", tr("Sprache"),
-                             tr("Sprache des Dokuments als BCP-47-Code (-M lang)"), "de-DE")),
+            metadata(textOpt("title", Tr::tr("Titel"),
+                             Tr::tr("Dokumenttitel; überschreibt den Titel der Eingabe (-M title)"))),
+            metadata(textOpt("author", Tr::tr("Autor"), Tr::tr("Autor des Dokuments (-M author)"))),
+            metadata(textOpt("lang", Tr::tr("Sprache"),
+                             Tr::tr("Sprache des Dokuments als BCP-47-Code (-M lang)"), "de-DE")),
         }};
 
     const QList<OptionDef> specific = specificOptions(f);
     if (!specific.isEmpty()) {
         const QString desc = description(f);
-        groups << OptionGroup{tr("Formatspezifisch: %1").arg(desc.isEmpty() ? f : desc),
+        groups << OptionGroup{Tr::tr("Formatspezifisch: %1").arg(desc.isEmpty() ? f : desc),
                               specific};
     }
 
-    OptionGroup advanced{tr("Erweitert"), {}};
+    OptionGroup advanced{Tr::tr("Erweitert"), {}};
     if (f != QLatin1String("docx") && f != QLatin1String("pptx")) {
-        advanced.options << fileOpt("--template", tr("Vorlage (Template)"),
-                                    tr("Eigene pandoc-Vorlage verwenden (--template)"),
-                                    tr("Alle Dateien (*)"));
+        advanced.options << fileOpt("--template", Tr::tr("Vorlage (Template)"),
+                                    Tr::tr("Eigene pandoc-Vorlage verwenden (--template)"),
+                                    Tr::tr("Alle Dateien (*)"));
     }
     if (highlightFormats.contains(f)) {
-        advanced.options << choiceOpt("--highlight-style", tr("Syntaxhervorhebung"),
-                                      tr("Farbschema für Quelltextblöcke (--highlight-style)"),
+        advanced.options << choiceOpt("--highlight-style", Tr::tr("Syntaxhervorhebung"),
+                                      Tr::tr("Farbschema für Quelltextblöcke (--highlight-style)"),
                                       highlightStyles);
     }
     if (!binaryFormats.contains(f)) {
-        advanced.options << choiceOpt("--wrap", tr("Zeilenumbruch"),
-                                      tr("Umbruch langer Zeilen in der Ausgabe (--wrap)"),
+        advanced.options << choiceOpt("--wrap", Tr::tr("Zeilenumbruch"),
+                                      Tr::tr("Umbruch langer Zeilen in der Ausgabe (--wrap)"),
                                       {"auto", "none", "preserve"})
-                         << intOpt("--columns", tr("Zeilenbreite"),
-                                   tr("Zeichen pro Zeile beim Umbruch (--columns)"), 10, 1000);
+                         << intOpt("--columns", Tr::tr("Zeilenbreite"),
+                                   Tr::tr("Zeichen pro Zeile beim Umbruch (--columns)"), 10, 1000);
     }
-    advanced.options << boolOpt("--citeproc", tr("Literaturangaben verarbeiten"),
-                                tr("Zitate und Literaturverzeichnis erzeugen (--citeproc)"))
-                     << fileOpt("--bibliography", tr("Literaturdatenbank"),
-                                tr("Literaturdatei für --citeproc (--bibliography)"),
-                                tr("Literatur (*.bib *.json *.yaml *.ris);;Alle Dateien (*)"))
-                     << fileOpt("--csl", tr("Zitierstil (CSL)"),
-                                tr("Zitierstil-Datei (--csl)"),
-                                tr("CSL-Stile (*.csl);;Alle Dateien (*)"))
-                     << fileOpt("--lua-filter", tr("Lua-Filter"),
-                                tr("Lua-Filter anwenden (--lua-filter)"),
-                                tr("Lua-Skripte (*.lua);;Alle Dateien (*)"));
+    advanced.options << boolOpt("--citeproc", Tr::tr("Literaturangaben verarbeiten"),
+                                Tr::tr("Zitate und Literaturverzeichnis erzeugen (--citeproc)"))
+                     << fileOpt("--bibliography", Tr::tr("Literaturdatenbank"),
+                                Tr::tr("Literaturdatei für --citeproc (--bibliography)"),
+                                Tr::tr("Literatur (*.bib *.json *.yaml *.ris);;Alle Dateien (*)"))
+                     << fileOpt("--csl", Tr::tr("Zitierstil (CSL)"),
+                                Tr::tr("Zitierstil-Datei (--csl)"),
+                                Tr::tr("CSL-Stile (*.csl);;Alle Dateien (*)"))
+                     << fileOpt("--lua-filter", Tr::tr("Lua-Filter"),
+                                Tr::tr("Lua-Filter anwenden (--lua-filter)"),
+                                Tr::tr("Lua-Skripte (*.lua);;Alle Dateien (*)"));
     groups << advanced;
 
     return groups;

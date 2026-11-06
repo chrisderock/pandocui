@@ -2,8 +2,11 @@
 
 #include "formatoptionswidget.h"
 #include "pandocformats.h"
+#include "translation.h"
 
 #include <QAction>
+#include <QActionGroup>
+#include <QProcess>
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
@@ -363,6 +366,23 @@ void MainWindow::setupMenus()
     fileMenu->addSeparator();
     QAction *pandocAction = fileMenu->addAction(tr("&pandoc-Programm festlegen …"), this,
                                                 &MainWindow::choosePandocExecutable);
+
+    QMenu *languageMenu = fileMenu->addMenu(tr("&Sprache"));
+    auto *languageGroup = new QActionGroup(this);
+    const QString configuredLanguage = Translation::languageSetting();
+    auto addLanguage = [&](const QString &code, const QString &label) {
+        QAction *action = languageMenu->addAction(label);
+        action->setCheckable(true);
+        action->setData(code);
+        action->setChecked(code == configuredLanguage);
+        languageGroup->addAction(action);
+    };
+    addLanguage(QString(), tr("Systemsprache"));
+    languageMenu->addSeparator();
+    const QStringList languages = Translation::availableLanguages();
+    for (const QString &code : languages)
+        addLanguage(code, Translation::nativeName(code));
+    connect(languageGroup, &QActionGroup::triggered, this, &MainWindow::changeLanguage);
     fileMenu->addSeparator();
     QAction *quitAction = fileMenu->addAction(tr("&Beenden"), this, &QWidget::close);
     quitAction->setShortcut(QKeySequence::Quit);
@@ -1260,6 +1280,31 @@ void MainWindow::choosePandocExecutable()
         QMessageBox::warning(this, tr("pandoc"),
                              tr("Die gewählte Datei konnte nicht als pandoc ausgeführt werden:\n%1")
                                  .arg(m_pandocInfo.error));
+}
+
+void MainWindow::changeLanguage(QAction *action)
+{
+    const QString code = action->data().toString();
+    if (code == Translation::languageSetting())
+        return;
+    Translation::setLanguageSetting(code);
+
+    // Gleiche wirksame Sprache (z. B. "Systemsprache" = Deutsch): kein Neustart nötig
+    if (Translation::resolve(code) == QLocale().name().left(2))
+        return;
+
+    const auto answer = QMessageBox::question(
+        this, tr("Sprache ändern"),
+        tr("Die neue Sprache wird beim nächsten Start von PandocUi verwendet.\n"
+           "Jetzt neu starten?"));
+    if (answer != QMessageBox::Yes)
+        return;
+
+    QStringList arguments;
+    if (!m_inputPath.isEmpty())
+        arguments << m_inputPath;
+    if (close())
+        QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
 }
 
 void MainWindow::showAbout()

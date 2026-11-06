@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QCoreApplication>
 #include <QHash>
 #include <QString>
 #include <QStringList>
@@ -20,6 +21,8 @@ struct Preset
 // (standardmäßig im Anwendungsdatenordner unter "presets").
 class PresetStore
 {
+    Q_DECLARE_TR_FUNCTIONS(PresetStore)
+
 public:
     explicit PresetStore(const QString &directory = defaultDirectory());
 

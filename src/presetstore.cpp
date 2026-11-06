@@ -16,11 +16,6 @@ namespace {
 constexpr int FormatVersion = 1;
 const QLatin1String VersionKey("pandocui-preset");
 
-QString tr(const char *text)
-{
-    return QCoreApplication::translate("PresetStore", text);
-}
-
 void setError(QString *error, const QString &message)
 {
     if (error)

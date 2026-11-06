@@ -4,6 +4,7 @@
 #include "pandocformats.h"
 #include "pandocinfo.h"
 #include "presetstore.h"
+#include "translation.h"
 
 #include <QCheckBox>
 #include <QFile>
@@ -40,6 +41,9 @@ private slots:
     void presetStoreRoundTrip();
     void presetJsonErrors();
     void mainWindowPresets();
+
+    void languageResolution();
+    void englishTranslation();
 
     void endToEndConversion();
 
@@ -366,6 +370,53 @@ void TestPandocUi::mainWindowPresets()
     foreign.formats = {"gibtsnicht", "gfm"};
     QCOMPARE(window.applyPreset(foreign), QStringList{"gibtsnicht"});
     QCOMPARE(window.selectedOutputFormats(), QStringList{"gfm"});
+}
+
+void TestPandocUi::languageResolution()
+{
+    QCOMPARE(Translation::availableLanguages(), (QStringList{"de", "en"}));
+    QCOMPARE(Translation::resolve("de"), QStringLiteral("de"));
+    QCOMPARE(Translation::resolve("EN_us"), QStringLiteral("en"));
+    // Leer bzw. unbekannt: Systemsprache, ansonsten Englisch – jedenfalls eine verfügbare
+    QVERIFY(Translation::availableLanguages().contains(Translation::resolve({})));
+    QVERIFY(Translation::availableLanguages().contains(Translation::resolve("fr")));
+    QCOMPARE(Translation::nativeName("en"), QStringLiteral("English"));
+}
+
+void TestPandocUi::englishTranslation()
+{
+    QCOMPARE(Translation::install(qApp, "en"), QStringLiteral("en"));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Konvertieren"), QStringLiteral("Convert"));
+    QCOMPARE(PandocFormats::description("pdf"), QStringLiteral("PDF document"));
+    QCOMPARE(PandocFormats::optionGroups("html").first().title, QStringLiteral("General"));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Fertig: %n Datei(en) erzeugt.", nullptr, 1),
+             QStringLiteral("Done: 1 file generated."));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Fertig: %n Datei(en) erzeugt.", nullptr, 3),
+             QStringLiteral("Done: 3 files generated."));
+
+    {
+        MainWindow window;
+        QCOMPARE(window.windowTitle(), QStringLiteral("PandocUi – convert documents with pandoc"));
+        QVERIFY(window.openInputFile(m_sample));
+        window.setSelectedOutputFormats({"html", "pdf", "docx"});
+        // Abgeleiteter Dateiname bleibt unabhängig von der Sprache
+        QCOMPARE(QFileInfo(window.outputPathFor("pdf")).fileName(), QStringLiteral("beispiel.pdf"));
+
+        const QString shot = qEnvironmentVariable("PANDOCUI_SCREENSHOT");
+        if (!shot.isEmpty()) {
+            window.setOutputDirectory(m_tmp.filePath("out"));
+            window.resize(1180, 860);
+            window.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&window));
+            QTest::qWait(200);
+            QVERIFY(window.grab().save(QString(shot).replace(".png", "_en.png")));
+        }
+    }
+
+    // Zurück zur Quellsprache
+    QCOMPARE(Translation::install(qApp, "de"), QStringLiteral("de"));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Konvertieren"), QStringLiteral("Konvertieren"));
+    QCOMPARE(PandocFormats::description("pdf"), QStringLiteral("PDF-Dokument"));
 }
 
 void TestPandocUi::endToEndConversion()

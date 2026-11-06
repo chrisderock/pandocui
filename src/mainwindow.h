@@ -84,6 +84,7 @@ private:
     void browseOutputDirectory();
     void choosePandocExecutable();
     void showAbout();
+    void changeLanguage(QAction *action);
 
     void detectInputFormat();
     void onAutoDetectToggled(bool checked);

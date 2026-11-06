@@ -64,7 +64,7 @@ fi
 if ! command -v qmake6 >/dev/null && ! command -v qtpaths6 >/dev/null \
    && [[ -z "${CMAKE_PREFIX_PATH:-}" && -z "${Qt6_DIR:-}" ]]; then
     echo "Hinweis: Qt 6 nicht im PATH gefunden – CMake sucht trotzdem in den Standardpfaden."
-    echo "         Debian/Ubuntu: sudo apt install qt6-base-dev"
+    echo "         Debian/Ubuntu: sudo apt install qt6-base-dev qt6-tools-dev qt6-l10n-tools"
     echo "         Eigene Qt-Installation: CMAKE_PREFIX_PATH=/pfad/zu/Qt/6.x/gcc_64 $0"
 fi
 command -v pandoc >/dev/null || echo "Hinweis: pandoc ist nicht installiert – die Anwendung benötigt es zur Laufzeit."

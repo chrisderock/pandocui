@@ -51,9 +51,33 @@ abweichen – die Dateien lassen sich daher auch gut von Hand bearbeiten:
 Formate, die die installierte pandoc-Version nicht kennt, werden beim Laden übersprungen
 und im Protokoll gemeldet.
 
+## Sprachen
+
+Die Oberfläche gibt es auf **Deutsch** und **Englisch**. Standardmäßig richtet sie sich nach
+der Systemsprache; Systeme, die nicht auf Deutsch eingestellt sind, erhalten Englisch.
+Umschalten lässt sich über *Datei → Sprache* (mit Angebot zum Neustart) oder beim Start:
+
+```bash
+PandocUi --lang en
+```
+
+Die Texte im Quelltext sind deutsch (`tr("…")`); die englische Übersetzung liegt in
+`translations/pandocui_en.ts` und wird beim Build als `.qm` in die Anwendung eingebettet.
+Nach Textänderungen im Quelltext die Übersetzungsdatei aktualisieren und anschließend
+die neuen Einträge (z. B. mit Qt Linguist) übersetzen:
+
+```bash
+cmake --build ~/builds/pandocui-release --target update_translations
+linguist translations/pandocui_en.ts
+```
+
+Eine weitere Sprache kommt hinzu, indem man eine Datei `translations/pandocui_<code>.ts`
+in `CMakeLists.txt` einträgt und den Code in `Translation::availableLanguages()`
+(`src/translation.cpp`) ergänzt.
+
 ## Voraussetzungen
 
-- Qt ≥ 6.5 (Modul Widgets, für die Tests zusätzlich Test)
+- Qt ≥ 6.5 (Modul Widgets und die Linguist-Werkzeuge `lupdate`/`lrelease`, für die Tests zusätzlich Test)
 - CMake ≥ 3.19, ein C++17-Compiler
 - pandoc im `PATH` (oder über *Datei → pandoc-Programm festlegen …* auswählen)
 - für PDF eine PDF-Engine, z. B. `pdflatex`/`xelatex` (TeX Live, MiKTeX), `typst` oder `weasyprint`
@@ -65,7 +89,7 @@ Für beide Plattformen gibt es ein Skript, das konfiguriert, baut und die Tests 
 ### Linux / WSL (Debian): `build.sh`
 
 ```bash
-sudo apt install qt6-base-dev cmake ninja-build g++ pandoc
+sudo apt install qt6-base-dev qt6-tools-dev qt6-l10n-tools cmake ninja-build g++ pandoc
 ./build.sh                       # Release-Build mit Tests
 ./build.sh --debug --run         # Debug-Build und danach starten
 ./build.sh --install ~/.local    # bauen und nach ~/.local/bin installieren
@@ -116,6 +140,8 @@ zusätzlich tatsächlich nach HTML, DOCX, GFM, ODT und – falls `pdflatex` vorh
 | `src/pandocinfo.*` | pandoc finden, Version und Formatlisten abfragen |
 | `src/formatoptionswidget.*` | Aus den Optionsdefinitionen erzeugte Eingabemaske je Format |
 | `src/presetstore.*` | Speichern, Laden, Import und Export von Presets (JSON) |
+| `src/translation.*` | Sprachauswahl und Laden der Übersetzungen |
+| `translations/` | Übersetzungsdateien (Qt Linguist) |
 | `src/conversionrunner.*` | Führt die pandoc-Aufrufe nacheinander per `QProcess` aus |
 | `src/mainwindow.*` | Hauptfenster mit den fünf Schritten |
 | `tests/` | QtTest-Tests und Beispieldokument |
