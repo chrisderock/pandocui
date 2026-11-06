@@ -96,6 +96,24 @@ jobs:
       - name: Bauen, testen, bereitstellen
         shell: powershell
         run: .\build.ps1 -QtDir $env:QT_ROOT_DIR -DeployDir dist\PandocUi
+      - name: Testfunktionen einzeln ausführen (Diagnose bei Fehlern)
+        if: failure()
+        shell: powershell
+        run: |
+          $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
+          $env:QT_QPA_PLATFORM = 'offscreen'
+          $exe = 'build\windows-release\tst_pandocui.exe'
+          if (-not (Test-Path $exe)) { Write-Host "Kein Testprogramm gebaut."; exit 0 }
+          $functions = & $exe -functions
+          Write-Host "-functions: Exit-Code $LASTEXITCODE"
+          foreach ($line in $functions) {
+              $name = $line.Trim() -replace '\(\)$', ''
+              if (-not $name) { continue }
+              Write-Host "===== $name"
+              & $exe $name -v1 -maxwarnings 0
+              Write-Host ("===== {0}: Exit-Code 0x{1:X8}" -f $name, $LASTEXITCODE)
+          }
+          exit 0
       - name: ZIP-Archiv erstellen
         shell: powershell
         run: |
