@@ -21,8 +21,9 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 env:
-  # Qt-LTS-Reihe für Windows (Debian 13 bringt Qt 6.8, Rocky Linux 10 Qt 6.10 selbst mit)
-  QT_VERSION: '6.8.*'
+  # Windows: statisch gebautes Qt (LTS-Reihe 6.8), siehe ci/build-qt-static.ps1.
+  # Debian 13 bringt Qt 6.8, Rocky Linux 10 Qt 6.10 selbst mit.
+  QT_STATIC_VERSION: '6.8.5'
   # macOS: Qt 6.8.3 verlinkt das AGL-Framework, das im macOS-26-SDK fehlt; ab 6.10 behoben
   QT_VERSION_MACOS: '6.10.*'
 
@@ -82,14 +83,33 @@ jobs:
     runs-on: windows-latest
     env:
       PANDOCUI_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+      QT_STATIC_DIR: C:\qt-static
     steps:
       - uses: actions/checkout@v5
-      - name: Qt installieren
-        uses: jurplel/install-qt-action@v4
+      - name: Visual-Studio-Version für den Cache-Schlüssel
+        id: vs
+        shell: powershell
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $version = & $vswhere -latest -property installationVersion
+          # Add-Content schreibt ohne BOM (Out-File -Encoding utf8 würde den Schlüssel verfälschen)
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "major=$($version.Split('.')[0])"
+      - name: Statisches Qt aus dem Cache
+        id: qt-cache
+        uses: actions/cache/restore@v4
         with:
-          version: ${{ env.QT_VERSION }}
-          arch: win64_msvc2022_64
-          cache: true
+          path: C:\qt-static
+          key: qt-static-${{ env.QT_STATIC_VERSION }}-vs${{ steps.vs.outputs.major }}-${{ hashFiles('ci/build-qt-static.ps1', 'ci/windows-env.ps1') }}
+      - name: Statisches Qt bauen (nur ohne Cache, etwa eine Stunde)
+        if: steps.qt-cache.outputs.cache-hit != 'true'
+        shell: powershell
+        run: .\ci\build-qt-static.ps1 -Version $env:QT_STATIC_VERSION -Prefix $env:QT_STATIC_DIR -WorkDir "$env:RUNNER_TEMP\qtb"
+      - name: Statisches Qt im Cache ablegen
+        if: steps.qt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: C:\qt-static
+          key: ${{ steps.qt-cache.outputs.cache-primary-key }}
       - name: pandoc für den Ende-zu-Ende-Test installieren
         shell: powershell
         run: |
@@ -97,14 +117,13 @@ jobs:
           "C:\Program Files\Pandoc" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Bauen, testen, bereitstellen
         shell: powershell
-        run: .\build.ps1 -QtDir $env:QT_ROOT_DIR -DeployDir dist\PandocUi
+        run: .\build.ps1 -QtDir $env:QT_STATIC_DIR -DeployDir dist\PandocUi
       - name: Testfunktionen einzeln ausführen (Diagnose bei Fehlern)
         if: failure()
         shell: powershell
         run: |
-          $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
           $env:QT_QPA_PLATFORM = 'offscreen'
-          $exe = 'build\windows-release\tst_pandocui.exe'
+          $exe = 'build\windows-release-static\tst_pandocui.exe'
           if (-not (Test-Path $exe)) { Write-Host "Kein Testprogramm gebaut."; exit 0 }
           $failed = @()
           foreach ($line in (& $exe -functions)) {
@@ -127,7 +146,7 @@ jobs:
               & "$debuggers\gflags.exe" /p /enable tst_pandocui.exe /full | Out-Null
               foreach ($name in $failed) {
                   Write-Host "===== Stacktrace für $name"
-                  & "$debuggers\cdb.exe" -lines -y "build\windows-release" `
+                  & "$debuggers\cdb.exe" -lines -y "build\windows-release-static" `
                       -c ".lines -e; g; .ecxr; kP 40; q" $exe $name -maxwarnings 0 |
                       Select-String -Pattern 'tst_pandocui|pandocui|Qt6|ntdll|Exception|exception|^\s*[0-9a-f]{2} ' |
                       Select-Object -First 120 | ForEach-Object { Write-Host $_.Line }
@@ -135,16 +154,25 @@ jobs:
               & "$debuggers\gflags.exe" /p /disable tst_pandocui.exe | Out-Null
           }
           exit 0
-      - name: ZIP-Archiv erstellen
+      - name: Release-Datei bereitstellen
         shell: powershell
         run: |
-          $zip = "dist\PandocUi-$env:PANDOCUI_RELEASE_VERSION-windows-x64.zip"
-          Compress-Archive -Path dist\PandocUi -DestinationPath $zip
-          Get-Item $zip
+          $exe = "dist\PandocUi-$env:PANDOCUI_RELEASE_VERSION-windows-x64.exe"
+          Copy-Item dist\PandocUi\PandocUi.exe $exe
+          # Prüfen, dass wirklich keine Qt-DLLs gebraucht werden
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $dumpbin = @(& $vswhere -latest -find 'VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe')[0]
+          if ($dumpbin) {
+              $deps = & $dumpbin /dependents $exe | Where-Object { $_ -match '^\s+\S+\.dll$' } | ForEach-Object { $_.Trim() }
+              Write-Host "Abhängige DLLs: $($deps -join ', ')"
+              $bad = $deps | Where-Object { $_ -match '^(Qt6|MSVCP|VCRUNTIME)' }
+              if ($bad) { Write-Host "::error::Unerwartete Abhängigkeiten: $($bad -join ', ')"; exit 1 }
+          }
+          Get-Item $exe
       - uses: actions/upload-artifact@v4
         with:
           name: pandocui-windows
-          path: dist/*.zip
+          path: dist/*.exe
           if-no-files-found: error
 
   macos:

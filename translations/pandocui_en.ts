@@ -527,8 +527,8 @@ Restart now?</translation>
         <translation>About PandocUi</translation>
     </message>
     <message>
-        <source>&lt;h3&gt;PandocUi %1&lt;/h3&gt;&lt;p&gt;Grafische Oberfläche für &lt;a href=&quot;https://pandoc.org&quot;&gt;pandoc&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Verwendetes pandoc: %2&lt;/p&gt;&lt;p&gt;Erstellt mit Qt %3.&lt;/p&gt;</source>
-        <translation>&lt;h3&gt;PandocUi %1&lt;/h3&gt;&lt;p&gt;Graphical user interface for &lt;a href=&quot;https://pandoc.org&quot;&gt;pandoc&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;pandoc in use: %2&lt;/p&gt;&lt;p&gt;Built with Qt %3.&lt;/p&gt;</translation>
+        <source>&lt;h3&gt;PandocUi %1&lt;/h3&gt;&lt;p&gt;Grafische Oberfläche für &lt;a href=&quot;https://pandoc.org&quot;&gt;pandoc&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;Verwendetes pandoc: %2&lt;/p&gt;&lt;p&gt;Erstellt mit Qt %3.&lt;/p&gt;&lt;p&gt;Lizenz: GNU General Public License Version 3 (GPLv3).&lt;br&gt;Quellcode: &lt;a href=&quot;https://github.com/chrisderock/pandocui&quot;&gt;github.com/chrisderock/pandocui&lt;/a&gt;&lt;/p&gt;</source>
+        <translation>&lt;h3&gt;PandocUi %1&lt;/h3&gt;&lt;p&gt;Graphical user interface for &lt;a href=&quot;https://pandoc.org&quot;&gt;pandoc&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;pandoc in use: %2&lt;/p&gt;&lt;p&gt;Built with Qt %3.&lt;/p&gt;&lt;p&gt;License: GNU General Public License version 3 (GPLv3).&lt;br&gt;Source code: &lt;a href=&quot;https://github.com/chrisderock/pandocui&quot;&gt;github.com/chrisderock/pandocui&lt;/a&gt;&lt;/p&gt;</translation>
     </message>
     <message>
         <source>nicht gefunden</source>

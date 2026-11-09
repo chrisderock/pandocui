@@ -157,6 +157,24 @@ Das Skript
 4. stellt mit `windeployqt` eine lauffähige Anwendung samt Qt-DLLs in `dist\PandocUi` zusammen.
 
 Weitere Schalter: `-BuildDir`, `-DeployDir`, `-NoTests`, `-NoDeploy` (siehe `Get-Help .\build.ps1 -Detailed`).
+
+#### Statischer Build (eine einzelne `PandocUi.exe`)
+
+Die veröffentlichte Windows-Version ist statisch gegen Qt gelinkt: eine einzelne `.exe` ohne
+Qt-DLLs und ohne Visual-C++-Laufzeit. Dafür wird ein selbst gebautes, statisches Qt benötigt
+(Qt Online Installer liefert nur DLLs):
+
+```bash
+build.cmd -Static -BuildQt          # statisches Qt einmalig bauen (ca. 1 Stunde), dann PandocUi
+build.cmd -Static                   # danach: vorhandenes statisches Qt verwenden
+```
+
+`ci/build-qt-static.ps1` lädt qtbase, qttools und qttranslations (Version 6.8.5) von
+download.qt.io, prüft die Prüfsummen und installiert nach `%USERPROFILE%\Qt\<version>\msvc64_static`
+(Release, statische Laufzeit `/MT`). Ob ein Qt statisch ist, erkennt `build.ps1` selbst – auch
+bei Angabe mit `-QtDir`. Gebaut wird dann nach `build\windows-release-static`; statt
+`windeployqt` wird nur die `.exe` nach `dist\PandocUi` kopiert. Die Texte der Qt-eigenen
+Dialoge (`qtbase_de.qm`) sind dabei in die Anwendung eingebettet.
 pandoc wird nicht mitgeliefert, sondern muss installiert sein (`winget install --id JohnMacFarlane.Pandoc`).
 
 Alternativ das Projekt (`CMakeLists.txt`) direkt in Qt Creator oder Visual Studio öffnen.
@@ -197,10 +215,15 @@ und bei Pull Requests für
 
 | Plattform | Umgebung | Ergebnis |
 |-----------|----------|----------|
-| Windows | `windows-latest`, MSVC, Qt 6.8 LTS | `PandocUi-<version>-windows-x64.zip` (mit Qt-DLLs, ohne pandoc) |
+| Windows | `windows-latest`, MSVC, Qt 6.8 LTS statisch | `PandocUi-<version>-windows-x64.exe` (einzelne Datei, ohne pandoc) |
 | macOS | `macos-26`, Universal-Binary (Apple Silicon + Intel), Qt 6.10, ab macOS 13 | `PandocUi-<version>-macos-universal.dmg` (App-Bundle, ohne pandoc) |
 | Debian 13 | Container `debian:13` | `pandocui_<version>_debian13_amd64.deb` |
 | Rocky Linux 10 | Container `rockylinux/rockylinux:10` | `pandocui-<version>-1.el10.x86_64.rpm` |
+
+Das statische Qt für Windows wird beim ersten Lauf gebaut (etwa eine Stunde) und im
+Actions-Cache abgelegt; spätere Läufe verwenden es wieder. Der Cache wird bei einer anderen
+Qt-Version (`QT_STATIC_VERSION`), einem geänderten `ci/build-qt-static.ps1` oder einer neuen
+Visual-Studio-Hauptversion neu aufgebaut, außerdem nachdem er 7 Tage lang ungenutzt war.
 
 Die macOS-App ist nur ad hoc signiert und nicht von Apple notarisiert. Beim ersten Start
 meldet macOS daher, dass der Entwickler nicht verifiziert werden kann: die App per
@@ -239,3 +262,12 @@ zusammen mit `SHA256SUMS.txt` als GitHub-Release mit automatisch erzeugten Relea
 
 Neue Optionen für ein Format werden in `specificOptions()` in `src/pandocformats.cpp`
 ergänzt – die Oberfläche und die Befehlszeile ergeben sich daraus automatisch.
+
+## Lizenz
+
+PandocUi steht unter der **GNU General Public License Version 3** (GPLv3), siehe [`LICENSE`](LICENSE).
+
+Die Anwendung verwendet [Qt](https://www.qt.io) unter dessen Open-Source-Lizenz (LGPLv3/GPL).
+Die Windows-Version enthält Qt statisch gelinkt; sie lässt sich aus dem Quellcode dieses
+Repositorys mit `ci/build-qt-static.ps1` und `build.ps1` gegen ein eigenes oder verändertes
+Qt neu bauen. Die Qt-Lizenzdetails zeigt *Hilfe → Über Qt*.
