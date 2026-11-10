@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 
 #include "formatoptionswidget.h"
+#include "helpdialog.h"
 #include "pandocformats.h"
 #include "pandocmissingdialog.h"
 #include "stepnavigator.h"
@@ -501,7 +502,11 @@ void MainWindow::setupMenus()
     });
 
     QMenu *helpMenu = menuBar()->addMenu(tr("&Hilfe"));
-    helpMenu->addAction(tr("pandoc-&Handbuch (online)"), this, [] {
+    QAction *manualAction = helpMenu->addAction(style()->standardIcon(QStyle::SP_DialogHelpButton),
+                                                tr("PandocUi-&Handbuch"), this,
+                                                &MainWindow::showManual);
+    manualAction->setShortcut(QKeySequence::HelpContents);
+    helpMenu->addAction(tr("&pandoc-Handbuch (online)"), this, [] {
         QDesktopServices::openUrl(QUrl(QStringLiteral("https://pandoc.org/MANUAL.html")));
     });
     helpMenu->addSeparator();
@@ -1621,6 +1626,16 @@ void MainWindow::showAbout()
                  QString::fromLatin1(qVersion())));
 }
 
+HelpDialog *MainWindow::showManual()
+{
+    if (!m_helpDialog)
+        m_helpDialog = new HelpDialog(this);
+    m_helpDialog->show();
+    m_helpDialog->raise();
+    m_helpDialog->activateWindow();
+    return m_helpDialog;
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (m_runner->isRunning()) {
@@ -1634,6 +1649,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         m_runner->cancel();
     }
     saveSettings();
+    if (m_helpDialog)
+        m_helpDialog->close(); // sonst bliebe die Anwendung mit offenem Handbuch bestehen
     event->accept();
 }
 

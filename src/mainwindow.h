@@ -10,6 +10,7 @@
 #include <QVariantMap>
 
 class FormatOptionsWidget;
+class HelpDialog;
 class QAction;
 class QCheckBox;
 class QComboBox;
@@ -78,6 +79,9 @@ public:
     bool loadPreset(const QString &name);
     QString currentPresetName() const { return m_currentPresetName; }
     const PresetStore &presetStore() const { return m_presets; }
+
+    // Hilfe → Handbuch (F1): öffnet das eingebettete Benutzerhandbuch (nicht modal)
+    HelpDialog *showManual();
 
 signals:
     void conversionFinished(int succeeded, int failed, bool cancelled);
@@ -191,4 +195,5 @@ private:
     QLabel *m_pandocStatus = nullptr;
 
     QList<QAction *> m_busyDisabledActions;
+    HelpDialog *m_helpDialog = nullptr;
 };

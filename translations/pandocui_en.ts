@@ -56,6 +56,33 @@
     </message>
 </context>
 <context>
+    <name>HelpDialog</name>
+    <message>
+        <source>PandocUi – Handbuch</source>
+        <translation>PandocUi – Manual</translation>
+    </message>
+    <message>
+        <source>&amp;Inhalt</source>
+        <translation>&amp;Contents</translation>
+    </message>
+    <message>
+        <source>Zum Inhaltsverzeichnis springen</source>
+        <translation>Jump to the table of contents</translation>
+    </message>
+    <message>
+        <source>Im Handbuch suchen …</source>
+        <translation>Search the manual …</translation>
+    </message>
+    <message>
+        <source>Eingabe: nächster Treffer, Umschalt+Eingabe: vorheriger Treffer</source>
+        <translation>Enter: next match, Shift+Enter: previous match</translation>
+    </message>
+    <message>
+        <source>&lt;span style=&quot;color:#c0392b&quot;&gt;Nicht gefunden&lt;/span&gt;</source>
+        <translation>&lt;span style=&quot;color:#c0392b&quot;&gt;Not found&lt;/span&gt;</translation>
+    </message>
+</context>
+<context>
     <name>MainWindow</name>
     <message>
         <source>PandocUi – Dokumente mit pandoc umwandeln</source>
@@ -200,10 +227,6 @@
     <message>
         <source>&amp;Hilfe</source>
         <translation>&amp;Help</translation>
-    </message>
-    <message>
-        <source>pandoc-&amp;Handbuch (online)</source>
-        <translation>pandoc &amp;manual (online)</translation>
     </message>
     <message>
         <source>Ü&amp;ber PandocUi</source>
@@ -686,6 +709,14 @@ Each format gets its own tab with options here.</translation>
     <message>
         <source>pandoc wurde weiterhin nicht gefunden.</source>
         <translation>pandoc was still not found.</translation>
+    </message>
+    <message>
+        <source>PandocUi-&amp;Handbuch</source>
+        <translation>PandocUi &amp;manual</translation>
+    </message>
+    <message>
+        <source>&amp;pandoc-Handbuch (online)</source>
+        <translation>&amp;pandoc manual (online)</translation>
     </message>
 </context>
 <context>

@@ -4,6 +4,10 @@ Grafische Oberfläche für [pandoc](https://pandoc.org), erstellt mit Qt 6 (Widg
 
 ![PandocUi: Auswahl der Ausgabeformate](docs/screenshots/2-ausgabeformate.png)
 
+Eine ausführliche Anleitung für Anwender steht im **[Benutzerhandbuch](docs/BENUTZERHANDBUCH.md)**
+(englisch: [User Manual](docs/USER_MANUAL.md)). Es ist auch in die Anwendung eingebettet und
+lässt sich dort über *Hilfe → PandocUi-Handbuch* (F1) in der Sprache der Oberfläche öffnen.
+
 ## Screenshots
 
 | | |
@@ -254,6 +258,8 @@ zusammen mit `SHA256SUMS.txt` als GitHub-Release mit automatisch erzeugten Relea
 | `src/formatoptionswidget.*` | Aus den Optionsdefinitionen erzeugte Eingabemaske je Format |
 | `src/presetstore.*` | Speichern, Laden, Import und Export von Presets (JSON) |
 | `src/translation.*` | Sprachauswahl und Laden der Übersetzungen |
+| `src/helpdialog.*` | Anzeige des eingebetteten Benutzerhandbuchs (Hilfe → PandocUi-Handbuch) |
+| `docs/` | Benutzerhandbuch (`BENUTZERHANDBUCH.md`, `USER_MANUAL.md`) und Bildschirmfotos; beides wird unter `:/manual` in die Anwendung eingebettet |
 | `translations/` | Übersetzungsdateien (Qt Linguist) |
 | `tools/` | Hilfsprogramm und Skript für die Screenshots (`docs/screenshots/`) |
 | `src/conversionrunner.*` | Führt die pandoc-Aufrufe nacheinander per `QProcess` aus |

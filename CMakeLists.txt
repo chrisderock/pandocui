@@ -55,6 +55,7 @@ set(PANDOCUI_CORE_SOURCES
     src/translation.h          src/translation.cpp
     src/stepnavigator.h        src/stepnavigator.cpp
     src/pandocmissingdialog.h  src/pandocmissingdialog.cpp
+    src/helpdialog.h           src/helpdialog.cpp
     src/mainwindow.h           src/mainwindow.cpp
 )
 qt_add_library(pandocui_core STATIC ${PANDOCUI_CORE_SOURCES})
@@ -91,6 +92,22 @@ if(PANDOCUI_STATIC_QT)
         )
     endif()
 endif()
+
+# Benutzerhandbuch (Hilfe → Handbuch): Markdown samt Bildschirmfotos unter :/manual einbetten.
+# Die Bilder werden relativ zum Handbuch referenziert (screenshots/…), daher BASE docs.
+file(GLOB _pandocui_manual_images CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/screenshots/*.png")
+qt_add_resources(pandocui_core "pandocui_manual"
+    PREFIX "/manual"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/docs"
+    FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/BENUTZERHANDBUCH.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/USER_MANUAL.md"
+        ${_pandocui_manual_images}
+)
+# Die Handbücher nicht nach übersetzbaren Texten durchsuchen (lupdate hielte sie für C++)
+set_property(TARGET pandocui_core APPEND PROPERTY QT_EXCLUDE_SOURCES_FROM_TRANSLATION
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/*")
 
 qt_add_executable(PandocUi src/main.cpp)
 target_link_libraries(PandocUi PRIVATE pandocui_core)

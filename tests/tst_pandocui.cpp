@@ -1,5 +1,6 @@
 #include "conversionrunner.h"
 #include "formatoptionswidget.h"
+#include "helpdialog.h"
 #include "mainwindow.h"
 #include "pandocformats.h"
 #include "pandocinfo.h"
@@ -13,6 +14,9 @@
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QTextBlock>
+#include <QTextBrowser>
+#include <QTextDocument>
 #include <QPushButton>
 #include <QTreeWidget>
 #include <QtTest>
@@ -51,6 +55,11 @@ private slots:
 
     void languageResolution();
     void englishTranslation();
+
+    void helpAnchors();
+    void helpDialog_data();
+    void helpDialog();
+    void helpFromMainWindow();
 
     void endToEndConversion();
 
@@ -530,6 +539,97 @@ void TestPandocUi::englishTranslation()
     QCOMPARE(Translation::install(qApp, "de"), QStringLiteral("de"));
     QCOMPARE(QCoreApplication::translate("MainWindow", "Konvertieren"), QStringLiteral("Konvertieren"));
     QCOMPARE(PandocFormats::description("pdf"), QStringLiteral("PDF-Dokument"));
+}
+
+void TestPandocUi::helpAnchors()
+{
+    QCOMPARE(HelpDialog::headingAnchor("1. Installation"), QStringLiteral("1-installation"));
+    QCOMPARE(HelpDialog::headingAnchor("8. Schritt 5: Erzeugen"), QStringLiteral("8-schritt-5-erzeugen"));
+    QCOMPARE(HelpDialog::headingAnchor("10. Sprache der Oberfläche"),
+             QStringLiteral("10-sprache-der-oberfläche"));
+    QCOMPARE(HelpDialog::manualUrl("de").toString(), QStringLiteral("qrc:/manual/BENUTZERHANDBUCH.md"));
+    QCOMPARE(HelpDialog::manualUrl("en").toString(), QStringLiteral("qrc:/manual/USER_MANUAL.md"));
+    QCOMPARE(HelpDialog::manualUrl("fr").toString(), QStringLiteral("qrc:/manual/USER_MANUAL.md"));
+}
+
+void TestPandocUi::helpDialog_data()
+{
+    QTest::addColumn<QString>("language");
+    QTest::addColumn<QString>("title");
+    QTest::newRow("de") << "de" << "PandocUi – Benutzerhandbuch";
+    QTest::newRow("en") << "en" << "PandocUi – User Manual";
+}
+
+void TestPandocUi::helpDialog()
+{
+    QFETCH(QString, language);
+    QFETCH(QString, title);
+
+    HelpDialog dialog(nullptr, language);
+    dialog.resize(900, 700);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QTextDocument *doc = dialog.browser()->document();
+    QCOMPARE(doc->begin().text(), title);
+    QVERIFY(doc->begin().blockFormat().headingLevel() == 1);
+
+    // Jeder interne Link (Inhaltsverzeichnis) führt zu einer Überschrift,
+    // jedes Bild ist eingebettet
+    int internalLinks = 0;
+    int images = 0;
+    for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
+        for (auto it = block.begin(); !it.atEnd(); ++it) {
+            const QTextCharFormat format = it.fragment().charFormat();
+            if (format.isAnchor() && format.anchorHref().startsWith(QLatin1Char('#'))) {
+                ++internalLinks;
+                QVERIFY2(dialog.scrollToAnchor(format.anchorHref().mid(1)),
+                         qPrintable(format.anchorHref()));
+            }
+            if (format.isImageFormat()) {
+                ++images;
+                const QString name = format.toImageFormat().name();
+                QVERIFY2(QFile::exists(QStringLiteral(":/manual/") + name), qPrintable(name));
+                // nicht breiter als das Fenster
+                QVERIFY(format.toImageFormat().width() > 0);
+                QVERIFY2(format.toImageFormat().width() <= dialog.browser()->viewport()->width(),
+                         qPrintable(QStringLiteral("%1: %2 > %3")
+                                        .arg(name)
+                                        .arg(format.toImageFormat().width())
+                                        .arg(dialog.browser()->viewport()->width())));
+            }
+        }
+    }
+    QVERIFY(internalLinks >= 13);
+    QCOMPARE(images, 7);
+
+    const QString shot = qEnvironmentVariable("PANDOCUI_SCREENSHOT");
+    if (!shot.isEmpty()) {
+        QVERIFY(dialog.scrollToAnchor(language == QLatin1String("de") ? "6-schritt-3-optionen"
+                                                                      : "6-step-3-options"));
+        QTest::qWait(100);
+        QVERIFY(dialog.grab().save(QString(shot).replace(".png", "_help_" + language + ".png")));
+    }
+    QVERIFY(!dialog.scrollToAnchor("gibt-es-nicht"));
+
+    // Suche: "xattr" kommt genau einmal vor – die zweite Suche läuft am Ende um
+    // und landet wieder auf demselben Treffer, ebenso rückwärts
+    QVERIFY(dialog.findText("xattr"));
+    const int first = dialog.browser()->textCursor().position();
+    QVERIFY(dialog.findText("xattr"));
+    QCOMPARE(dialog.browser()->textCursor().position(), first);
+    QVERIFY(dialog.findText("xattr", true));
+    QCOMPARE(dialog.browser()->textCursor().selectedText(), QStringLiteral("xattr"));
+    QVERIFY(!dialog.findText("xyzzy-kommt-nicht-vor"));
+}
+
+void TestPandocUi::helpFromMainWindow()
+{
+    MainWindow window;
+    HelpDialog *help = window.showManual();
+    QVERIFY(help);
+    QVERIFY(help->isVisible());
+    QCOMPARE(window.showManual(), help); // wird wiederverwendet
+    help->close();
 }
 
 void TestPandocUi::endToEndConversion()
