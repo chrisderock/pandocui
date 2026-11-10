@@ -1612,7 +1612,10 @@ void MainWindow::showAbout()
         tr("<h3>PandocUi %1</h3>"
            "<p>Grafische Oberfläche für <a href=\"https://pandoc.org\">pandoc</a>.</p>"
            "<p>Verwendetes pandoc: %2</p>"
-           "<p>Erstellt mit Qt %3.</p>")
+           "<p>Erstellt mit Qt %3.</p>"
+           "<p>Lizenz: GNU General Public License Version 3 (GPLv3).<br>"
+           "Quellcode: <a href=\"https://github.com/chrisderock/pandocui\">"
+           "github.com/chrisderock/pandocui</a></p>")
             .arg(QStringLiteral(PANDOCUI_VERSION),
                  m_pandocInfo.ok ? m_pandocInfo.version.toHtmlEscaped() : tr("nicht gefunden"),
                  QString::fromLatin1(qVersion())));

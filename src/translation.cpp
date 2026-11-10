@@ -88,10 +88,13 @@ QString install(QCoreApplication *app, const QString &requested)
         }
     }
 
-    // Texte der Qt-eigenen Dialoge (Ja/Nein, Dateiauswahl …)
+    // Texte der Qt-eigenen Dialoge (Ja/Nein, Dateiauswahl …): eingebettet beim statischen
+    // Build, sonst aus dem Übersetzungsordner der Qt-Installation bzw. der Bereitstellung
     auto *qtTranslator = new QTranslator(app);
     if (qtTranslator->load(locale, QStringLiteral("qtbase"), QStringLiteral("_"),
-                           QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+                           QStringLiteral(":/i18n"))
+        || qtTranslator->load(locale, QStringLiteral("qtbase"), QStringLiteral("_"),
+                              QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
         QCoreApplication::installTranslator(qtTranslator);
         s_qtTranslator = qtTranslator;
     } else {

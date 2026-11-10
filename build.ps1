@@ -4,20 +4,33 @@
 
 .DESCRIPTION
     Sucht Visual Studio (vswhere) und eine Qt-6-Installation für MSVC, konfiguriert das
-    Projekt mit CMake/Ninja, baut es, führt die Tests aus und stellt die Anwendung mit
-    windeployqt in einem eigenständigen Ordner (dist\PandocUi) zusammen.
+    Projekt mit CMake/Ninja, baut es, führt die Tests aus und stellt die Anwendung in einem
+    Ordner (dist\PandocUi) bereit.
+
+    Mit einem normalen Qt (DLLs) sammelt windeployqt die Qt-DLLs neben der Anwendung ein.
+    Mit einem statisch gebauten Qt (siehe ci\build-qt-static.ps1) entsteht eine einzelne
+    PandocUi.exe ohne weitere Abhängigkeiten. Welche Art vorliegt, wird automatisch erkannt.
 
 .PARAMETER QtDir
     Qt-Installation, z. B. C:\Qt\6.8.2\msvc2022_64. Ohne Angabe wird QTDIR bzw. Qt6_DIR
     verwendet oder die neueste Version unter C:\Qt bzw. %USERPROFILE%\Qt gesucht.
 
+.PARAMETER Static
+    Ohne -QtDir ein statisches Qt (Ordner msvc64_static) statt eines normalen Qt suchen.
+
+.PARAMETER BuildQt
+    Zusammen mit -Static: Wird kein statisches Qt gefunden, wird es mit
+    ci\build-qt-static.ps1 gebaut (Version -QtVersion; dauert etwa eine Stunde).
+
 .PARAMETER Config
-    Release (Standard) oder Debug.
+    Release (Standard) oder Debug. Mit statischem Qt nur Release.
 
 .EXAMPLE
     .\build.ps1
 .EXAMPLE
     .\build.ps1 -QtDir C:\Qt\6.8.2\msvc2022_64 -Config Debug -Run
+.EXAMPLE
+    .\build.ps1 -Static -BuildQt
 #>
 [CmdletBinding()]
 param(
@@ -26,6 +39,9 @@ param(
     [string]$Config = 'Release',
     [string]$BuildDir,
     [string]$DeployDir,
+    [switch]$Static,
+    [switch]$BuildQt,
+    [string]$QtVersion = '6.8.5',
     [switch]$Clean,
     [switch]$NoTests,
     [switch]$NoDeploy,
@@ -34,60 +50,39 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $SourceDir = $PSScriptRoot
-
-function Write-Step([string]$Text) {
-    Write-Host ''
-    Write-Host "==> $Text" -ForegroundColor Cyan
-}
-
-function Stop-Build([string]$Text) {
-    Write-Host "Fehler: $Text" -ForegroundColor Red
-    exit 1
-}
-
-function Invoke-Native([string]$File, [string[]]$Arguments) {
-    & $File @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        Stop-Build "$File endete mit Exit-Code $LASTEXITCODE."
-    }
-}
+. (Join-Path $SourceDir 'ci\windows-env.ps1')
 
 function Test-QtDir([string]$Dir) {
     return $Dir -and (Test-Path (Join-Path $Dir 'lib\cmake\Qt6\Qt6Config.cmake'))
 }
 
-# --- Visual Studio ------------------------------------------------------------
-Write-Step 'Suche Visual Studio'
-$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-if (-not (Test-Path $vswhere)) {
-    Stop-Build 'Visual Studio wurde nicht gefunden (vswhere.exe fehlt).'
-}
-$vsPath = & $vswhere -latest -prerelease -products * `
-    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-$vsPath = @($vsPath)[0]
-if (-not $vsPath) {
-    Stop-Build 'Keine Visual-Studio-Installation mit C++-Werkzeugen gefunden (Workload "Desktopentwicklung mit C++").'
-}
-Write-Host "  $vsPath"
-
-if (-not $env:VSCMD_VER) {
-    # VsDevCmd ruft vswhere.exe über den PATH auf
-    $env:PATH = "$(Split-Path $vswhere);$env:PATH"
-    Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
-    Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation `
-        -DevCmdArguments '-arch=x64 -host_arch=x64' | Out-Null
-}
-
-foreach ($tool in 'cl', 'cmake', 'ninja') {
-    if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
-        Stop-Build "$tool nicht gefunden. Im Visual Studio Installer die Komponente 'C++-CMake-Tools für Windows' installieren."
+# Neueste Qt-Installation unter C:\Qt bzw. %USERPROFILE%\Qt, deren Ordnername $Filter entspricht
+function Find-QtDir([string]$Filter) {
+    $roots = @('C:\Qt', (Join-Path $env:USERPROFILE 'Qt')) | Where-Object { Test-Path $_ }
+    $found = foreach ($root in $roots) {
+        Get-ChildItem $root -Directory -Filter '6.*' | ForEach-Object {
+            Get-ChildItem $_.FullName -Directory -Filter $Filter
+        }
     }
+    $found = $found |
+        Where-Object { Test-QtDir $_.FullName } |
+        Sort-Object @{ Expression = { try { [version]$_.Parent.Name } catch { [version]'0.0' } }; Descending = $true },
+                    @{ Expression = { $_.Name }; Descending = $true }
+    if ($found) {
+        return @($found)[0].FullName
+    }
+    return $null
 }
-Write-Host "  cmake: $((Get-Command cmake).Source)"
+
+Enter-MsvcEnvironment
 
 # --- Qt -----------------------------------------------------------------------
-Write-Step 'Suche Qt 6 (MSVC)'
-if (-not $QtDir) {
+if ($Static) {
+    Write-Step 'Suche statisches Qt 6 (MSVC)'
+} else {
+    Write-Step 'Suche Qt 6 (MSVC)'
+}
+if (-not $QtDir -and -not $Static) {
     foreach ($candidate in @($env:QTDIR, $env:Qt6_DIR)) {
         if (Test-QtDir $candidate) {
             $QtDir = $candidate
@@ -101,30 +96,37 @@ if (-not $QtDir) {
     }
 }
 if (-not $QtDir) {
-    $roots = @('C:\Qt', (Join-Path $env:USERPROFILE 'Qt')) | Where-Object { Test-Path $_ }
-    $found = foreach ($root in $roots) {
-        Get-ChildItem $root -Directory -Filter '6.*' | ForEach-Object {
-            Get-ChildItem $_.FullName -Directory -Filter 'msvc*_64'
-        }
-    }
-    $found = $found |
-        Where-Object { Test-QtDir $_.FullName } |
-        Sort-Object @{ Expression = { try { [version]$_.Parent.Name } catch { [version]'0.0' } }; Descending = $true },
-                    @{ Expression = { $_.Name }; Descending = $true }
-    if ($found) {
-        $QtDir = @($found)[0].FullName
+    # Das Muster msvc*_64 trifft msvc64_static bewusst nicht.
+    $QtDir = if ($Static) { Find-QtDir 'msvc*_static' } else { Find-QtDir 'msvc*_64' }
+}
+if (-not $QtDir -and $Static -and $BuildQt) {
+    $QtDir = Join-Path $env:USERPROFILE "Qt\$QtVersion\msvc64_static"
+    Write-Step "Baue statisches Qt $QtVersion nach $QtDir"
+    & (Join-Path $SourceDir 'ci\build-qt-static.ps1') -Version $QtVersion -Prefix $QtDir
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Build "Der Build des statischen Qt ist fehlgeschlagen."
     }
 }
 if (-not (Test-QtDir $QtDir)) {
+    if ($Static) {
+        Stop-Build ("Kein statisches Qt gefunden. Mit -BuildQt bauen lassen oder den Pfad mit -QtDir angeben.")
+    }
     Stop-Build ("Qt 6 für MSVC wurde nicht gefunden. Mit dem Qt Online Installer die Komponente " +
                 "'MSVC 2022 64-bit' installieren oder den Pfad mit -QtDir angeben.")
 }
 $QtDir = (Resolve-Path $QtDir).Path
-Write-Host "  $QtDir"
+# Statisches Qt: Bibliotheken vorhanden, aber keine Qt-DLLs
+$StaticQt = (Test-Path (Join-Path $QtDir 'lib\Qt6Core.lib')) -and
+            -not (Get-ChildItem (Join-Path $QtDir 'bin') -Filter 'Qt6Core*.dll' -ErrorAction SilentlyContinue)
+Write-Host "  $QtDir$(if ($StaticQt) { ' (statisch)' })"
+if ($StaticQt -and $Config -eq 'Debug') {
+    Stop-Build 'Das statische Qt enthält nur Release-Bibliotheken; bitte -Config Release verwenden.'
+}
 
 # --- Konfigurieren und bauen --------------------------------------------------
 if (-not $BuildDir) {
-    $BuildDir = Join-Path $SourceDir "build\windows-$($Config.ToLower())"
+    $suffix = if ($StaticQt) { '-static' } else { '' }
+    $BuildDir = Join-Path $SourceDir "build\windows-$($Config.ToLower())$suffix"
 }
 if ($Clean -and (Test-Path $BuildDir)) {
     Write-Step "Lösche $BuildDir"
@@ -140,8 +142,10 @@ Invoke-Native 'cmake' @('-S', $SourceDir, '-B', $BuildDir, '-G', 'Ninja',
 Write-Step 'Baue'
 Invoke-Native 'cmake' @('--build', $BuildDir, '--parallel')
 
-# Qt-DLLs für Tests und direkten Start auffindbar machen
-$env:PATH = "$(Join-Path $QtDir 'bin');$env:PATH"
+if (-not $StaticQt) {
+    # Qt-DLLs für Tests und direkten Start auffindbar machen
+    $env:PATH = "$(Join-Path $QtDir 'bin');$env:PATH"
+}
 
 if (-not $NoTests) {
     Write-Step 'Führe Tests aus'
@@ -161,11 +165,16 @@ if (-not $NoDeploy) {
     }
     New-Item -ItemType Directory -Force $DeployDir | Out-Null
     Copy-Item $exe $DeployDir
+    Copy-Item (Join-Path $SourceDir 'LICENSE') (Join-Path $DeployDir 'LICENSE.txt')
     $exe = Join-Path $DeployDir 'PandocUi.exe'
 
-    $windeployqt = Join-Path $QtDir 'bin\windeployqt.exe'
-    $modeFlag = if ($Config -eq 'Debug') { '--debug' } else { '--release' }
-    Invoke-Native $windeployqt @($modeFlag, '--compiler-runtime', '--no-system-d3d-compiler', $exe)
+    if ($StaticQt) {
+        Write-Host '  Statisch gelinkt: keine Qt-DLLs nötig.'
+    } else {
+        $windeployqt = Join-Path $QtDir 'bin\windeployqt.exe'
+        $modeFlag = if ($Config -eq 'Debug') { '--debug' } else { '--release' }
+        Invoke-Native $windeployqt @($modeFlag, '--compiler-runtime', '--no-system-d3d-compiler', $exe)
+    }
 }
 
 Write-Host ''
